@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22758" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="AppSettings" representedClassName="AppSettings" syncable="YES" codeGenerationType="class">
+        <attribute name="isPinned" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="windowFrame" optional="YES" attributeType="String"/>
+        <attribute name="popoverSize" optional="YES" attributeType="String"/>
+        <attribute name="selectedPreferencesTab" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="Image" representedClassName="Image" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="fileName" optional="NO" attributeType="String"/>
+        <attribute name="createdAt" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+    </entity>
+</model>

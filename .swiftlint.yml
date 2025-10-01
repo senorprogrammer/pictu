@@ -1,0 +1,25 @@
+included:
+  - Pictu
+excluded:
+  - .build
+  - build
+  - DerivedData
+
+# Start strict but pragmatic
+opt_in_rules:
+  - empty_count
+  - fatal_error_message
+  - force_unwrapping
+  - redundant_nil_coalescing
+  - unowned_variable_capture
+
+disabled_rules:
+  - todo
+  - trailing_whitespace
+
+line_length:
+  warning: 140
+  error: 180
+
+identifier_name:
+  min_length: 2
