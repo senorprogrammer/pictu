@@ -156,7 +156,11 @@ class PersistenceManager: ObservableObject {
         }
         
         let fileName = "\(UUID().uuidString).png"
-        let fileURL = getImagesDirectory().appendingPathComponent(fileName)
+        // Ensure directory exists before writing
+        guard let imagesDir = FileManager.ensurePictuDirectoryExists() else {
+            return nil
+        }
+        let fileURL = imagesDir.appendingPathComponent(fileName)
         
         do {
             try pngData.write(to: fileURL)
@@ -198,8 +202,8 @@ class PersistenceManager: ObservableObject {
         
         do {
             if let imageEntity = try context.fetch(request).first,
-               let fileName = imageEntity.fileName {
-                let fileURL = getImagesDirectory().appendingPathComponent(fileName)
+               let fileName = imageEntity.fileName,
+               let fileURL = FileManager.pictuImageURL(for: fileName) {
                 return NSImage(contentsOf: fileURL)
             }
         } catch {
@@ -284,25 +288,16 @@ class PersistenceManager: ObservableObject {
         }
         
         // Delete from file system
-        let fileURL = getImagesDirectory().appendingPathComponent(fileName)
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            do { try FileManager.default.removeItem(at: fileURL) } catch { print("Error deleting file: \(error)") }
+        if let fileURL = FileManager.pictuImageURL(for: fileName) {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                do { try FileManager.default.removeItem(at: fileURL) } catch { print("Error deleting file: \(error)") }
+            }
         }
     }
     
     // MARK: - Helper Methods
     
-    private func getImagesDirectory() -> URL {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            fatalError("Unable to access application support directory")
-        }
-        let pictuDir = appSupport.appendingPathComponent("Pictu")
-        
-        // Create directory if it doesn't exist
-        try? FileManager.default.createDirectory(at: pictuDir, withIntermediateDirectories: true)
-        
-        return pictuDir
-    }
+    
     
     private func saveContext() {
         if context.hasChanges {
