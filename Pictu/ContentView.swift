@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 
 // MARK: - Constants
 private enum Constants {
-    static let maxImageDimension: CGFloat = 640
     static let cornerRadius: CGFloat = 8
     static let padding: CGFloat = 4
     static let spacerHeight: CGFloat = 10
@@ -18,57 +17,16 @@ struct FixedImageView: NSViewRepresentable {
         let imageView = NSImageView()
         imageView.imageAlignment = .alignCenter
         imageView.imageScaling = .scaleNone
-        imageView.image = resizedImage(for: image)
-        imageView.setFrameSize(calculateDisplaySize(for: image))
+        imageView.image = ImageSizing.scaledImage(for: image)
+        imageView.setFrameSize(ImageSizing.displaySize(for: image))
         return imageView
     }
 
     func updateNSView(_ nsView: NSImageView, context: Context) {
-        nsView.image = resizedImage(for: image)
-        nsView.setFrameSize(calculateDisplaySize(for: image))
+        nsView.image = ImageSizing.scaledImage(for: image)
+        nsView.setFrameSize(ImageSizing.displaySize(for: image))
     }
     
-    private func calculateDisplaySize(for image: NSImage) -> NSSize {
-        let imageSize = image.size
-        let maxDimension = Constants.maxImageDimension
-        
-        // If image is smaller than max dimension, use original size
-        if imageSize.width <= maxDimension && imageSize.height <= maxDimension {
-            return imageSize
-        }
-        
-        // Calculate scale factor to fit within max dimension while maintaining aspect ratio
-        let scaleX = maxDimension / imageSize.width
-        let scaleY = maxDimension / imageSize.height
-        let scale = min(scaleX, scaleY)
-        
-        return NSSize(
-            width: imageSize.width * scale,
-            height: imageSize.height * scale
-        )
-    }
-    
-    private func resizedImage(for image: NSImage) -> NSImage {
-        let targetSize = calculateDisplaySize(for: image)
-        let originalSize = image.size
-        
-        // If no resizing needed, return original
-        if targetSize.width >= originalSize.width && targetSize.height >= originalSize.height {
-            return image
-        }
-        
-        // Create a new image with the target size
-        let resizedImage = NSImage(size: targetSize)
-        
-        resizedImage.lockFocus()
-        
-        // Draw the original image scaled to the target size
-        image.draw(in: NSRect(origin: .zero, size: targetSize))
-        
-        resizedImage.unlockFocus()
-        
-        return resizedImage
-    }
 }
 
 struct ContentView: View {

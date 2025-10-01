@@ -33,7 +33,6 @@ class PersistenceManager: ObservableObject {
         return ctx
     }()
     
-    private static let maxImageDimension: CGFloat = 640
     
     private init() {}
     
@@ -135,81 +134,12 @@ class PersistenceManager: ObservableObject {
     
     /// Scales an image down if it exceeds the maximum dimension while maintaining aspect ratio
     private func scaleImageIfNeeded(_ image: NSImage) -> NSImage {
-        let maxDimension: CGFloat = Self.maxImageDimension
-        let imageSize = image.size
-        
         // Guard against invalid image dimensions
-        guard imageSize.width > 0 && imageSize.height > 0 else {
+        guard image.size.width > 0 && image.size.height > 0 else {
             return image // Return original if invalid size
         }
         
-        // If image is already within limits, return original
-        if imageSize.width <= maxDimension && imageSize.height <= maxDimension {
-            return image
-        }
-        
-        // Calculate scale factor to fit within max dimension while maintaining aspect ratio
-        let scaleX = maxDimension / imageSize.width
-        let scaleY = maxDimension / imageSize.height
-        let scale = min(scaleX, scaleY)
-        
-        let targetSize = NSSize(
-            width: imageSize.width * scale,
-            height: imageSize.height * scale
-        )
-        
-        // Use Core Graphics for reliable scaling that preserves quality and reduces file size
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            // Fallback to simple scaling
-            let scaledImage = NSImage(size: targetSize)
-            scaledImage.lockFocus()
-            defer { scaledImage.unlockFocus() }
-            NSGraphicsContext.current?.imageInterpolation = .high
-            image.draw(in: NSRect(origin: .zero, size: targetSize))
-            return scaledImage
-        }
-        
-        // Create a bitmap context for scaling
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let context = CGContext(
-            data: nil,
-            width: Int(targetSize.width),
-            height: Int(targetSize.height),
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            // Fallback to simple scaling
-            let scaledImage = NSImage(size: targetSize)
-            scaledImage.lockFocus()
-            defer { scaledImage.unlockFocus() }
-            NSGraphicsContext.current?.imageInterpolation = .high
-            image.draw(in: NSRect(origin: .zero, size: targetSize))
-            return scaledImage
-        }
-        
-        // Set high quality interpolation
-        context.interpolationQuality = .high
-        
-        // Draw the original image scaled to the target size
-        context.draw(cgImage, in: CGRect(origin: .zero, size: targetSize))
-        
-        // Create a new CGImage from the context
-        guard let scaledCGImage = context.makeImage() else {
-            // Fallback to simple scaling
-            let scaledImage = NSImage(size: targetSize)
-            scaledImage.lockFocus()
-            defer { scaledImage.unlockFocus() }
-            NSGraphicsContext.current?.imageInterpolation = .high
-            image.draw(in: NSRect(origin: .zero, size: targetSize))
-            return scaledImage
-        }
-        
-        // Create a new NSImage from the scaled CGImage
-        let scaledImage = NSImage(cgImage: scaledCGImage, size: targetSize)
-        
-        return scaledImage
+        return ImageSizing.scaledImage(for: image)
     }
     
     /// Saves an image to persistent storage and makes it the active image

@@ -7,7 +7,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     // MARK: - Constants
     enum AppConstants {
         enum Popover {
-            static let maxImageDimension: CGFloat = 640
             static let borderPadding: CGFloat = 32
             static let settingsButtonHeight: CGFloat = 60
             static let minimumWidth: CGFloat = 200
@@ -281,23 +280,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func resizePopoverForImage(_ image: NSImage) {
-        let imageSize = image.size
-        let maxDimension = AppConstants.Popover.maxImageDimension
+        let displaySize = ImageSizing.displaySize(for: image)
         let border = AppConstants.Popover.borderPadding
-        
-        // Calculate display size (same logic as FixedImageView)
-        let displaySize: NSSize
-        if imageSize.width <= maxDimension && imageSize.height <= maxDimension {
-            displaySize = imageSize
-        } else {
-            let scaleX = maxDimension / imageSize.width
-            let scaleY = maxDimension / imageSize.height
-            let scale = min(scaleX, scaleY)
-            displaySize = NSSize(
-                width: imageSize.width * scale,
-                height: imageSize.height * scale
-            )
-        }
         
         // Calculate popover size based on display size
         let targetWidth = displaySize.width + border
