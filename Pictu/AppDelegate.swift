@@ -39,9 +39,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     // About window controller
     private var aboutWC: NSWindowController?
 
-    // Keyboard monitors
-    private var globalMonitor: Any?
-    private var localMonitor: Any?
+    // Keyboard shortcut manager
+    private var keyboardShortcutManager: KeyboardShortcutManager!
     
     // Keep Combine cancellables alive
     private var cancellables: Set<AnyCancellable> = []
@@ -111,7 +110,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }.store(in: &cancellables)
 
         // 5) Keyboard shortcuts
-        registerToggleShortcut()
+        keyboardShortcutManager = KeyboardShortcutManager(appDelegate: self)
+        keyboardShortcutManager.registerToggleShortcut()
     }
 
     @objc private func statusItemClicked(_ sender: Any?) {
@@ -211,73 +211,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.terminate(nil)
     }
 
-    // MARK: - Keyboard shortcuts
-
-    private func registerToggleShortcut() {
-        // Check accessibility permissions
-        let trusted = AXIsProcessTrusted()
-        if !trusted {
-            print("⚠️ Accessibility permissions not granted. Global shortcuts may not work.")
-            print("Please grant accessibility permissions in System Preferences > Security & Privacy > Privacy > Accessibility")
-        }
-        
-        // Original shortcut: ⌥⌘P
-        let originalMods: NSEvent.ModifierFlags = [.option, .command]
-        let originalKey = "p"
-        
-        // New shortcut: ⌃⌥⌘0
-        let newMods: NSEvent.ModifierFlags = [.control, .option, .command]
-        let newKey = "0"
-
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if self?.handleShortcut(event: event, requiredMods: originalMods, key: originalKey) == true {
-                return
-            }
-            if self?.handleShortcut(event: event, requiredMods: newMods, key: newKey) == true {
-                return
-            }
-        }
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            // Don't intercept navigation keys when preferences window is key
-            // Only intercept when popover is shown or when it's not a preferences window
-            let isPreferencesWindow = self?.prefsWC?.window?.isKeyWindow == true
-            
-            if isPreferencesWindow {
-                // Let preferences window handle all keys
-                return event
-            }
-            
-            // For popover, don't intercept navigation keys
-            if event.keyCode == AppConstants.KeyCodes.delete ||
-               event.keyCode == AppConstants.KeyCodes.leftArrow ||
-               event.keyCode == AppConstants.KeyCodes.rightArrow ||
-               event.keyCode == AppConstants.KeyCodes.escape {
-                return event
-            }
-            
-            if self?.handleShortcut(event: event, requiredMods: originalMods, key: originalKey) == true {
-                return nil
-            }
-            if self?.handleShortcut(event: event, requiredMods: newMods, key: newKey) == true {
-                return nil
-            }
-            return event
-        }
+    // Exposes whether preferences window is key without leaking private window controller
+    func isPreferencesWindowKey() -> Bool {
+        return prefsWC?.window?.isKeyWindow == true
     }
 
-    @discardableResult
-    private func handleShortcut(event: NSEvent,
-                                requiredMods: NSEvent.ModifierFlags,
-                                key: String) -> Bool {
-        let mods = event.modifierFlags.intersection([.command, .option, .control, .shift])
-        if mods == requiredMods, event.charactersIgnoringModifiers?.lowercased() == key {
-            // Ensure app is activated when shortcut is triggered
-            NSApp.activate(ignoringOtherApps: true)
-            togglePopover(nil)
-            return true
-        }
-        return false
-    }
 
     private func resizePopoverForImage(_ image: NSImage) {
         let displaySize = ImageSizing.displaySize(for: image)
@@ -336,8 +274,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     deinit {
-        if let globalMonitor = globalMonitor { NSEvent.removeMonitor(globalMonitor) }
-        if let localMonitor = localMonitor { NSEvent.removeMonitor(localMonitor) }
+        keyboardShortcutManager?.unregisterShortcuts()
     }
     
     // MARK: - NSWindowDelegate
