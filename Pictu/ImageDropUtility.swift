@@ -16,7 +16,7 @@ enum ImageDropConstants {
     // Animation timing
     static let focusDelay: TimeInterval = 0.1
     static let deletionDelay: TimeInterval = 0.1
-    static let popoverCloseDelay: TimeInterval = 0.15
+    static let popoverCloseDelay: TimeInterval = 0.2
     static let popoverReopenDelay: TimeInterval = 0.1
     
     // Layout spacing
