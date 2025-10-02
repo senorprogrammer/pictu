@@ -87,37 +87,33 @@ final class AppState: ObservableObject {
             return
         }
         
-        // Check if we're deleting the active image
-        let wasActiveImage = allImages[deletedIndex].isActive
+        // Check if we're deleting the currently selected image
+        let wasCurrent = (deletedIndex == currentImageIndex)
         
         // Delete the image
         persistenceManager.deleteImage(fileName: fileName)
         
-        // If we deleted the active image, select a replacement
-        if wasActiveImage {
-            let remainingImages = getAllImages()
-            if !remainingImages.isEmpty {
-                let newSelectedIndex: Int
-                if deletedIndex < remainingImages.count {
-                    // Image to the right (same index position)
-                    newSelectedIndex = deletedIndex
-                } else if deletedIndex > 0 {
-                    // Image to the left (previous index)
-                    newSelectedIndex = deletedIndex - 1
-                } else {
-                    // No images left, select first one
-                    newSelectedIndex = 0
+        // Update index and select replacement if needed
+        let remainingImages = getAllImages()
+        if !remainingImages.isEmpty {
+            if wasCurrent {
+                // We deleted the current image, select a replacement
+                if currentImageIndex >= remainingImages.count {
+                    // Index is now out of bounds, select the last image
+                    currentImageIndex = remainingImages.count - 1
                 }
-                
-                // Ensure the new index is valid and set as active
-                if newSelectedIndex < remainingImages.count {
-                    let newFileName = remainingImages[newSelectedIndex].fileName
-                    setActiveImage(fileName: newFileName)
-                }
-            } else {
-                // No images left, clear the active image
-                droppedImage = nil
+                // Keep currentImageIndex the same (which now points to the next image)
+                let newFileName = remainingImages[currentImageIndex].fileName
+                setActiveImage(fileName: newFileName)
+            } else if deletedIndex < currentImageIndex {
+                // We deleted an image before the current one, adjust index
+                currentImageIndex -= 1
             }
+            // If we deleted after current, index stays the same
+        } else {
+            // No images left, clear everything
+            currentImageIndex = 0
+            droppedImage = nil
         }
     }
     
@@ -179,13 +175,17 @@ final class AppState: ObservableObject {
             popoverSize = constrainToScreen(savedSize)
         }
         
-        // Load active image
-        if let image = persistenceManager.loadActiveImage() {
-            droppedImage = image
+        // Load active image and set the current index
+        let allImages = getAllImages()
+        if let activeIndex = allImages.firstIndex(where: { $0.isActive }) {
+            currentImageIndex = activeIndex
+            if let image = persistenceManager.loadActiveImage() {
+                droppedImage = image
+            }
         } else {
             // Fallback: if no active image but images exist, select the most recent one
-            let allImages = getAllImages()
             if let mostRecentImage = allImages.first {
+                currentImageIndex = 0
                 setActiveImage(fileName: mostRecentImage.fileName)
             }
         }

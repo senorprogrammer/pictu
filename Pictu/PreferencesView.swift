@@ -178,14 +178,15 @@ struct ThumbnailStrip: View {
                 HStack(spacing: ImageDropConstants.thumbnailSpacing) {
                     ForEach(thumbnailManager.images.indices, id: \.self) { idx in
                         let imageInfo = thumbnailManager.images[idx]
-                        let isSelected = (thumbnailManager.selectedIndex == idx)
+                        let isSelected = (appState.currentImageIndex == idx)
                         
                         ThumbnailView(
                             fileName: imageInfo.fileName,
                             isActive: imageInfo.isActive,
                             isSelected: isSelected,
                             onTap: {
-                                thumbnailManager.selectImage(idx)
+                                appState.currentImageIndex = idx
+                                appState.setActiveImage(fileName: imageInfo.fileName)
                             },
                             onFileNotFound: {
                                 thumbnailManager.deleteImage(imageInfo.fileName)
@@ -197,8 +198,8 @@ struct ThumbnailStrip: View {
                 .padding(.horizontal, ImageDropConstants.thumbnailSpacing)
                 .padding(.vertical, ImageDropConstants.thumbnailPadding)
             }
-            .onChange(of: thumbnailManager.selectedIndex) {
-                if let newIndex = thumbnailManager.selectedIndex, newIndex < thumbnailManager.images.count {
+            .onChange(of: appState.currentImageIndex) { newIndex in
+                if newIndex < thumbnailManager.images.count {
                     let fileName = thumbnailManager.images[newIndex].fileName
                     withAnimation(.easeInOut(duration: 0.3)) {
                         proxy.scrollTo(fileName, anchor: .center)
@@ -225,8 +226,9 @@ struct ThumbnailStrip: View {
         .background(
             KeyEventHandlingView { keyCode in
                 if keyCode == AppDelegate.AppConstants.KeyCodes.delete {
-                    if let selectedIndex = thumbnailManager.selectedIndex, selectedIndex < thumbnailManager.images.count {
-                        let fileName = thumbnailManager.images[selectedIndex].fileName
+                    let currentIndex = appState.currentImageIndex
+                    if currentIndex < thumbnailManager.images.count {
+                        let fileName = thumbnailManager.images[currentIndex].fileName
                         thumbnailManager.deleteImage(fileName)
                     }
                 } else if keyCode == AppDelegate.AppConstants.KeyCodes.leftArrow {
