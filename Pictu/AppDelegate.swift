@@ -221,15 +221,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Calculate popover size: scaled image size + 32px (16px padding on all sides)
         let scaledImageSize = ImageSizing.displaySize(for: image)
         let padding: CGFloat = 16
-        let newSize = NSSize(
+        let newWindowSize = NSSize(
             width: scaledImageSize.width + (padding * 2),
             height: scaledImageSize.height + (padding * 2)
         )
         
         // Update the hosting controller's preferred size
-        if let hostingController = popover.contentViewController as? NSHostingController<ContentView> {
-            hostingController.preferredContentSize = newSize
-        }
+        popover.contentViewController?.preferredContentSize = newWindowSize
         
         // If popover is currently shown, close and reopen to apply new size
         // If popover is closed, just update the size for when it's next opened
@@ -249,9 +247,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let newSize = NSSize(width: 320, height: 240)
         
         // Update the hosting controller's preferred size
-        if let hostingController = popover.contentViewController as? NSHostingController<ContentView> {
-            hostingController.preferredContentSize = newSize
-        }
+        popover.contentViewController?.preferredContentSize = newSize
         
         // If popover is currently shown, close and reopen to apply new size
         // If popover is closed, just update the size for when it's next opened

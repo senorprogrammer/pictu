@@ -21,8 +21,8 @@ struct FixedImageView: NSViewRepresentable {
         return imageView
     }
 
-    func updateNSView(_ nsView: NSImageView, context: Context) {
-        nsView.image = ImageSizing.scaledImage(for: image)
+    func updateNSView(_ imageView: NSImageView, context: Context) {
+        imageView.image = ImageSizing.scaledImage(for: image)
     }
     
 }
