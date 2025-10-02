@@ -17,14 +17,14 @@ struct FixedImageView: NSViewRepresentable {
         let imageView = NSImageView()
         imageView.imageAlignment = .alignCenter
         imageView.imageScaling = .scaleNone
-        imageView.image = ImageSizing.scaledImage(for: image)
-        imageView.setFrameSize(ImageSizing.displaySize(for: image))
+        imageView.image = image
+        imageView.setFrameSize(image.size)
         return imageView
     }
 
     func updateNSView(_ nsView: NSImageView, context: Context) {
-        nsView.image = ImageSizing.scaledImage(for: image)
-        nsView.setFrameSize(ImageSizing.displaySize(for: image))
+        nsView.image = image
+        nsView.setFrameSize(image.size)
     }
     
 }
@@ -40,7 +40,7 @@ struct ContentView: View {
             if let image = appState.droppedImage {
                 FixedImageView(image: image)
                     .cornerRadius(Constants.cornerRadius)
-                    .padding(Constants.padding)
+                    .padding(16)
             } else {
                 // Show the same drop target as the settings Images pane
                 RoundedRectangle(cornerRadius: 12)
@@ -58,7 +58,6 @@ struct ContentView: View {
             }
             
         }
-        .padding(16)
         .onDrop(of: [.image], isTargeted: $isDragOver) { providers in
             ImageDropHandler.handleDrop(providers: providers, appState: appState)
         }
