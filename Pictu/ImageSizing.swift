@@ -2,7 +2,7 @@ import AppKit
 
 // MARK: - Image Sizing Utility
 struct ImageSizing {
-    static let maxImageDimension: CGFloat = 320
+    static let maxImageDimension: CGFloat = 640
     
     /// Calculates the display size for an image, scaling down if longest side exceeds 320px
     /// - Parameter image: The image to calculate size for
