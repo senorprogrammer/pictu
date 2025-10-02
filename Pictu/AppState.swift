@@ -7,6 +7,7 @@ final class AppState: ObservableObject {
     @Published var droppedImage: NSImage?
     @Published var popoverSize: CGSize = CGSize(width: 260, height: 200)
     @Published var currentImageIndex: Int = 0  // Single source of truth for current image
+    @Published var maxWindowSize: Int32 = 1024
     
     private let persistenceManager = PersistenceManager.shared
     
@@ -20,6 +21,11 @@ final class AppState: ObservableObject {
         isPinned = pinned
         // Window frame will be saved separately by AppDelegate
         persistenceManager.saveAppSettings(isPinned: pinned, windowFrame: .zero)
+    }
+    
+    func saveMaxWindowSize(_ maxSize: Int32) {
+        maxWindowSize = maxSize
+        persistenceManager.saveMaxWindowSize(maxSize)
     }
     
     func savePopoverSize(_ size: CGSize) {
@@ -140,6 +146,9 @@ final class AppState: ObservableObject {
         // Load pinned state
         let settings = persistenceManager.loadAppSettings()
         isPinned = settings.isPinned
+        
+        // Load max window size
+        maxWindowSize = PersistenceManager.shared.loadMaxWindowSize()
         
         // Load popover size and constrain to screen
         if let savedSize = persistenceManager.loadPopoverSize() {

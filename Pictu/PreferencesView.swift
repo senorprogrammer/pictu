@@ -94,13 +94,24 @@ struct PreferencesView: View {
 struct GeneralSettingsView: View {
     @EnvironmentObject var appState: AppState
     
+    private let maxWindowSizeOptions: [Int32] = [320, 640, 1024]
+    
     var body: some View {
         Form {
-            Section("General") {
+            Section("Window") {
                 Toggle("Keep popover pinned by default", isOn: Binding(
                     get: { appState.isPinned },
                     set: { appState.savePinnedState($0) }
                 ))
+                
+                Picker("Maximum popover size", selection: Binding(
+                    get: { appState.maxWindowSize },
+                    set: { appState.saveMaxWindowSize($0) }
+                )) {
+                    ForEach(maxWindowSizeOptions, id: \.self) { size in
+                        Text(String(size)).tag(size)
+                    }
+                }
             }
 
             Section("Appearance") {

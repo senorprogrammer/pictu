@@ -114,6 +114,24 @@ class PersistenceManager: ObservableObject {
         return loadAppSettings()?.selectedPreferencesTab
     }
     
+    /// Saves the maximum window size to persistent storage
+    /// - Parameter maxSize: The maximum window size in points
+    func saveMaxWindowSize(_ maxSize: Int32) {
+        let settings = getOrCreateAppSettings()
+        settings.maxWindowSize = maxSize
+        saveContext()
+    }
+    
+    /// Loads the maximum window size from persistent storage
+    /// - Returns: The saved maximum window size, defaults to 1024 if not set
+    func loadMaxWindowSize() -> Int32 {
+        guard let settings = loadAppSettings(),
+              settings.maxWindowSize > 0 else {
+            return 1024 // Default fallback
+        }
+        return settings.maxWindowSize
+    }
+    
     // MARK: - Images
     
     private func deactivateAllImages(in ctx: NSManagedObjectContext) {

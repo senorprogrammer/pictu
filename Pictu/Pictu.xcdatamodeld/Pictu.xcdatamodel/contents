@@ -5,6 +5,7 @@
         <attribute name="windowFrame" optional="YES" attributeType="String"/>
         <attribute name="popoverSize" optional="YES" attributeType="String"/>
         <attribute name="selectedPreferencesTab" optional="YES" attributeType="String"/>
+        <attribute name="maxWindowSize" optional="YES" attributeType="Integer 32" defaultValueString="1024" usesScalarValueType="YES"/>
     </entity>
     <entity name="Image" representedClassName="Image" syncable="YES" codeGenerationType="class">
         <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
