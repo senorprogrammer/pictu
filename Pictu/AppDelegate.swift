@@ -18,6 +18,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     // About window controller
     private var aboutWC: NSWindowController?
 
+    // Track settings window state
+    private var isSettingsWindowOpen: Bool = false
+
     // Keyboard shortcut manager
     private var keyboardShortcutManager: KeyboardShortcutManager!
     
@@ -116,7 +119,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             popover.performClose(sender)
         } else {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
+            // Only make popover key if settings window is not open
+            if !isSettingsWindowOpen {
+                popover.contentViewController?.view.window?.makeKey()
+            }
         }
     }
     
@@ -156,6 +162,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         prefsWC?.window?.makeKey()
         prefsWC?.window?.makeFirstResponder(prefsWC?.window?.contentViewController?.view)
         NSApp.activate(ignoringOtherApps: true)
+        isSettingsWindowOpen = true
     }
 
     @objc private func showAbout() {
@@ -229,7 +236,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.popover.contentViewController?.preferredContentSize = currentSize
                 
                 self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
-                self.popover.contentViewController?.view.window?.makeKey()
+                // Only make popover key if settings window is not open
+                if !self.isSettingsWindowOpen {
+                    self.popover.contentViewController?.view.window?.makeKey()
+                }
             }
         }
     }
@@ -266,6 +276,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard let window = notification.object as? NSWindow,
               window == prefsWC?.window else { return }
         saveWindowFrame(window)
+    }
+    
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              window == prefsWC?.window else { return }
+        isSettingsWindowOpen = false
+        prefsWC = nil // Clean up window controller
     }
     
     // MARK: - Helper Methods
