@@ -11,19 +11,16 @@ struct KeyEventHandlingView: NSViewRepresentable {
     let onKeyPress: (UInt16) -> Void
     
     func makeCoordinator() -> Coordinator {
-        print("🔍 [KeyEventHandlingView] makeCoordinator called")
         return Coordinator(onKeyPress: onKeyPress)
     }
     
     func makeNSView(context: Context) -> KeyEventNSView {
-        print("🔍 [KeyEventHandlingView] makeNSView called")
         let view = KeyEventNSView()
         view.coordinator = context.coordinator
         return view
     }
     
     func updateNSView(_ nsView: KeyEventNSView, context: Context) {
-        print("🔍 [KeyEventHandlingView] updateNSView called")
         // Update the coordinator's handler
         context.coordinator.onKeyPress = onKeyPress
     }
@@ -33,13 +30,10 @@ struct KeyEventHandlingView: NSViewRepresentable {
         
         init(onKeyPress: @escaping (UInt16) -> Void) {
             self.onKeyPress = onKeyPress
-            print("🔍 [Coordinator] initialized")
         }
         
         func handleKeyPress(_ keyCode: UInt16) {
-            print("🔍 [Coordinator] handleKeyPress called with code: \(keyCode)")
             onKeyPress(keyCode)
-            print("🔍 [Coordinator] onKeyPress completed")
         }
     }
 }
@@ -63,38 +57,16 @@ class KeyEventNSView: NSView {
     
     // We need this for the key event handling to work
     override func becomeFirstResponder() -> Bool {
-        print("🔍 [KeyEvent] Becoming first responder")
         return super.becomeFirstResponder()
     }
     
     // We need this for the key event handling to work
     override func resignFirstResponder() -> Bool {
-        print("🔍 [KeyEvent] Resigning first responder")
         return super.resignFirstResponder()
     }
     
     override func keyDown(with event: NSEvent) {
-        let keyName = getKeyName(for: event.keyCode)
-        print("🔍 [KeyEvent] Key pressed: \(keyName) (code: \(event.keyCode))")
-        print("🔍 [KeyEvent] First responder: \(window?.firstResponder == self)")
-        print("🔍 [KeyEvent] coordinator exists: \(coordinator != nil)")
-        if let coordinator = coordinator {
-            print("🔍 [KeyEvent] About to call coordinator.handleKeyPress")
-            coordinator.handleKeyPress(event.keyCode)
-            print("🔍 [KeyEvent] coordinator.handleKeyPress returned")
-        } else {
-            print("🔍 [KeyEvent] Coordinator is nil!")
-        }
-    }
-    
-    private func getKeyName(for keyCode: UInt16) -> String {
-        switch keyCode {
-        case 51: return "DELETE"
-        case 123: return "LEFT ARROW"
-        case 124: return "RIGHT ARROW"
-        case 53: return "ESCAPE"
-        default: return "UNKNOWN (\(keyCode))"
-        }
+        coordinator?.handleKeyPress(event.keyCode)
     }
     
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

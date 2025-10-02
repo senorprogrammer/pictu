@@ -213,12 +213,8 @@ struct ThumbnailStrip: View {
             initializeThumbnailManager()
             // Auto-focus when the view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.focusDelay) {
-                print("🔍 [Focus] Setting isFocused to true")
                 isFocused = true
             }
-        }
-        .onChange(of: isFocused) { newValue in
-            print("🔍 [Focus] isFocused changed to: \(newValue)")
         }
         .onChange(of: appState.droppedImage) {
             // Images are now automatically updated through reactive updates

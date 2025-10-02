@@ -144,15 +144,11 @@ final class AppState: ObservableObject {
     }
     
     func navigateLeft() {
-        print("🔍 [AppState] navigateLeft() called, current index: \(currentImageIndex)")
         navigateToPreviousImage()
-        print("🔍 [AppState] navigateLeft() completed, new index: \(currentImageIndex)")
     }
     
     func navigateRight() {
-        print("🔍 [AppState] navigateRight() called, current index: \(currentImageIndex)")
         navigateToNextImage()
-        print("🔍 [AppState] navigateRight() completed, new index: \(currentImageIndex)")
     }
     
     private func setActiveImageWithPopoverHandling(fileName: String) {
