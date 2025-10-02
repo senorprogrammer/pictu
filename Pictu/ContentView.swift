@@ -17,14 +17,12 @@ struct FixedImageView: NSViewRepresentable {
         let imageView = NSImageView()
         imageView.imageAlignment = .alignCenter
         imageView.imageScaling = .scaleNone
-        imageView.image = image
-        imageView.setFrameSize(image.size)
+        imageView.image = ImageSizing.scaledImage(for: image)
         return imageView
     }
 
     func updateNSView(_ nsView: NSImageView, context: Context) {
-        nsView.image = image
-        nsView.setFrameSize(image.size)
+        nsView.image = ImageSizing.scaledImage(for: image)
     }
     
 }

@@ -2,17 +2,55 @@ import AppKit
 
 // MARK: - Image Sizing Utility
 struct ImageSizing {
-    /// Returns the natural size of the image without any scaling
-    /// - Parameter image: The image to get size for
-    /// - Returns: The natural image size
+    static let maxImageDimension: CGFloat = 320
+    
+    /// Calculates the display size for an image, scaling down if longest side exceeds 320px
+    /// - Parameter image: The image to calculate size for
+    /// - Returns: The calculated display size
     static func displaySize(for image: NSImage) -> NSSize {
-        return image.size
+        let imageSize = image.size
+        let maxDimension = maxImageDimension
+        
+        // If image is smaller than max dimension, use original size
+        if imageSize.width <= maxDimension && imageSize.height <= maxDimension {
+            return imageSize
+        }
+        
+        // Calculate scale factor to fit within max dimension while maintaining aspect ratio
+        let scaleX = maxDimension / imageSize.width
+        let scaleY = maxDimension / imageSize.height
+        let scale = min(scaleX, scaleY)
+        
+        return NSSize(
+            width: imageSize.width * scale,
+            height: imageSize.height * scale
+        )
     }
     
-    /// Returns the original image without any scaling
-    /// - Parameter image: The image to return
-    /// - Returns: The original image
+    /// Scales an image down if longest side exceeds 320px while maintaining aspect ratio
+    /// - Parameter image: The image to scale
+    /// - Returns: The scaled image, or original if no scaling needed
     static func scaledImage(for image: NSImage) -> NSImage {
-        return image
+        let targetSize = displaySize(for: image)
+        let originalSize = image.size
+        
+        // If no resizing needed, return original
+        if targetSize.width >= originalSize.width && targetSize.height >= originalSize.height {
+            return image
+        }
+        
+        // Create a new image with the target size
+        let scaledImage = NSImage(size: targetSize)
+        
+        scaledImage.lockFocus()
+        defer { scaledImage.unlockFocus() }
+        
+        // Set high quality interpolation
+        NSGraphicsContext.current?.imageInterpolation = .high
+        
+        // Draw the original image scaled to the target size
+        image.draw(in: NSRect(origin: .zero, size: targetSize))
+        
+        return scaledImage
     }
 }
