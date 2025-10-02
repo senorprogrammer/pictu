@@ -151,30 +151,52 @@ class PersistenceManager: ObservableObject {
     }
     
     /// Scales an image down if it exceeds the maximum dimension while maintaining aspect ratio
+    /// Works with actual pixel dimensions to avoid DPI scaling issues
     private func scaleImageIfNeeded(_ image: NSImage) -> NSImage {
         // Guard against invalid image dimensions
         guard image.size.width > 0 && image.size.height > 0 else {
             return image // Return original if invalid size
         }
         
-        let maxDimension = CGFloat(loadMaxWindowSize())
+        let maxDimension: CGFloat = 1024
+        
+        // Try to get bitmap representation for accurate pixel dimensions
+        if let bitmapRep = image.representations.compactMap({ $0 as? NSBitmapImageRep }).first {
+            let scaledBitmap = ImageSizing.scaledBitmapRep(bitmapRep, maxDimension: maxDimension)
+            let scaledImage = NSImage(size: scaledBitmap.size)
+            scaledImage.addRepresentation(scaledBitmap)
+            return scaledImage
+        }
+        
+        // Fallback to legacy method
         return ImageSizing.scaledImage(for: image, maxDimension: maxDimension)
     }
     
-    /// Saves an image to persistent storage and makes it the active image
-    /// - Parameter image: The image to save
+    /// Saves an image to persistent storage with pixel-based resizing and JPEG conversion
+    /// - Parameters:
+    ///   - image: The image to save
+    ///   - originalFileURL: Optional original file URL for preserving metadata
     /// - Returns: The filename of the saved image, or nil if saving failed
-    func saveImage(_ image: NSImage) -> String? {
+    func saveImageFromData(_ image: NSImage, originalFileURL: URL? = nil) -> String? {
         // Scale the image if it exceeds the maximum dimension
         let scaledImage = scaleImageIfNeeded(image)
         
+        // Get bitmap representation for conversion
         guard let imageData = scaledImage.tiffRepresentation,
-              let bitmapRep = NSBitmapImageRep(data: imageData),
-              let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
+              let bitmapRep = NSBitmapImageRep(data: imageData) else {
+            ErrorManager.shared.logError(NSError(domain: "ImageProcessing", code: 1), context: "creating bitmap representation")
             return nil
         }
         
-        let fileName = "\(UUID().uuidString).png"
+        // Convert to JPEG with good quality (0.85 = 85% quality)
+        guard let jpegData = bitmapRep.representation(using: .jpeg, properties: [
+            .compressionFactor: NSNumber(value: 0.85)
+        ]) else {
+            ErrorManager.shared.logError(NSError(domain: "ImageProcessing", code: 2), context: "creating JPEG representation")
+            return nil
+        }
+        
+        let fileName = "\(UUID().uuidString).jpg"
         // Ensure directory exists before writing
         guard let imagesDir = FileManager.ensurePictuDirectoryExists() else {
             return nil
@@ -182,9 +204,9 @@ class PersistenceManager: ObservableObject {
         let fileURL = imagesDir.appendingPathComponent(fileName)
         
         do {
-            try pngData.write(to: fileURL)
+            try jpegData.write(to: fileURL)
         } catch {
-            ErrorManager.shared.logError(error, context: "saving image data to disk")
+            ErrorManager.shared.logError(error, context: "saving JPEG data to disk")
             return nil
         }
         
@@ -206,11 +228,18 @@ class PersistenceManager: ObservableObject {
                 }
                 resultFileName = fileName
             } catch {
-                ErrorManager.shared.logError(error, context: "saving context (saveImage)")
+                ErrorManager.shared.logError(error, context: "saving context (saveImageFromData)")
                 resultFileName = nil
             }
         }
         return resultFileName
+    }
+    
+    /// Legacy method for saving images (kept for compatibility)
+    /// - Parameter image: The image to save
+    /// - Returns: The filename of the saved image, or nil if saving failed
+    func saveImage(_ image: NSImage) -> String? {
+        return saveImageFromData(image)
     }
     
     /// Loads the currently active image from persistent storage

@@ -237,7 +237,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func resizePopoverForImage(_ image: NSImage) {
         // Calculate popover size: scaled image size + padding on all sides
         let maxDimension = CGFloat(appState.maxWindowSize)
-        let scaledImageSize = ImageSizing.displaySize(for: image, maxDimension: maxDimension)
+        let scaledImageSize = ImageSizing.displaySize(for: image.size, maxDimension: maxDimension)
         let newWindowSize = NSSize(
             width: scaledImageSize.width + (AppConstants.Popover.imagePadding * 2),
             height: scaledImageSize.height + (AppConstants.Popover.imagePadding * 2)

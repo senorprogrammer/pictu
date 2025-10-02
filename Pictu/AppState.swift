@@ -61,6 +61,12 @@ final class AppState: ObservableObject {
         }
     }
     
+    func saveImageFromData(_ image: NSImage, originalFileURL: URL? = nil) {
+        if persistenceManager.saveImageFromData(image, originalFileURL: originalFileURL) != nil {
+            droppedImage = image
+        }
+    }
+    
     func clearImage() {
         persistenceManager.clearActiveImage()
         droppedImage = nil
