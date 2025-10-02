@@ -121,14 +121,32 @@ struct ImageDropView: View {
             // Main content area - takes up available space
             VStack(spacing: 0) {
                 if let image = appState.droppedImage {
+                    // Show current image with drop handling overlaid
                     SwiftUI.Image(nsImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(16)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            // Invisible drop overlay when image exists
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onDrop(of: [.image], isTargeted: $isDragOver) { providers in
+                                    ImageDropHandler.handleDrop(providers: providers, appState: appState)
+                                }
+                        )
+                        .overlay(
+                            // Show drag indicator when dragging over image
+                            isDragOver ? 
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.blue, lineWidth: 2)
+                                    .fill(Color.blue.opacity(0.1))
+                                    .padding(16)
+                                : nil
+                        )
                 } else {
-                    // Fill the available space with 8px border, excluding thumbnail area
+                    // Show drop target when no image
                     DropTargetView(
                         isDragOver: $isDragOver,
                         onDrop: { providers in

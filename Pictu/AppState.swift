@@ -91,6 +91,14 @@ final class AppState: ObservableObject {
         }
     }
     
+    /// Updates the currentImageIndex to match the active image
+    private func updateCurrentImageIndex() {
+        let allImages = getAllImages()
+        if let activeIndex = allImages.firstIndex(where: { $0.isActive }) {
+            currentImageIndex = activeIndex
+        }
+    }
+    
     // MARK: - Navigation Methods
     
     func navigateToPreviousImage() {
