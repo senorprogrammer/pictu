@@ -9,8 +9,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         enum Popover {
             static let borderPadding: CGFloat = 32
             static let settingsButtonHeight: CGFloat = 60
-            static let minimumWidth: CGFloat = 200
-            static let minimumHeight: CGFloat = 150
+            static let minimumWidth: CGFloat = 120
+            static let minimumHeight: CGFloat = 120
         }
         
         enum Window {
@@ -218,24 +218,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
 
     private func resizePopoverForImage(_ image: NSImage) {
-        let displaySize = ImageSizing.displaySize(for: image)
-        let border = AppConstants.Popover.borderPadding
-        
-        // Calculate popover size based on display size
-        let targetWidth = displaySize.width + border
-        let targetHeight = displaySize.height + border + AppConstants.Popover.settingsButtonHeight
-        
-        // Set minimum size
-        let finalWidth = max(targetWidth, AppConstants.Popover.minimumWidth)
-        let finalHeight = max(targetHeight, AppConstants.Popover.minimumHeight)
-        
-        let newSize = NSSize(width: finalWidth, height: finalHeight)
-        
-        // Update the hosting controller's preferred size
-        if let hostingController = popover.contentViewController as? NSHostingController<ContentView> {
-            hostingController.preferredContentSize = newSize
-        }
-        
         // If popover is currently shown, close and reopen to apply new size
         // If popover is closed, just update the size for when it's next opened
         if popover.isShown {
@@ -247,7 +229,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.popover.contentViewController?.view.window?.makeKey()
             }
         }
-        // If popover is closed, the size will be applied when it's next opened
     }
     
     private func resizePopoverForNoImage() {
