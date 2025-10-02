@@ -295,6 +295,53 @@ class PersistenceManager: ObservableObject {
         }
     }
     
+    /// Deletes an image and returns a replacement image to display
+    /// - Parameter fileName: The filename of the image to delete
+    /// - Returns: The new active image to display, or nil if no images remain
+    func deleteImageAndGetReplacement(fileName: String) -> NSImage? {
+        // Get all images before deletion
+        let allImages = getAllImages()
+        guard let deletedIndex = allImages.firstIndex(where: { $0.fileName == fileName }) else {
+            return nil
+        }
+        
+        // Check if we're deleting the currently active image
+        let wasActive = allImages[deletedIndex].isActive
+        
+        // Delete the image
+        deleteImage(fileName: fileName)
+        
+        // Get remaining images after deletion
+        let remainingImages = getAllImages()
+        
+        if remainingImages.isEmpty {
+            // No images left
+            return nil
+        }
+        
+        if wasActive {
+            // We deleted the active image, need to select a replacement
+            let replacementIndex: Int
+            if deletedIndex < remainingImages.count {
+                // Use the same index (now points to the next image)
+                replacementIndex = deletedIndex
+            } else {
+                // Index is out of bounds, select the last image
+                replacementIndex = remainingImages.count - 1
+            }
+            
+            // Set the replacement as active
+            let replacementFileName = remainingImages[replacementIndex].fileName
+            setActiveImage(fileName: replacementFileName)
+            
+            // Return the new active image
+            return loadActiveImage()
+        } else {
+            // We deleted a non-active image, return the current active image
+            return loadActiveImage()
+        }
+    }
+    
     // MARK: - Helper Methods
     
     

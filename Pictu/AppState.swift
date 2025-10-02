@@ -78,39 +78,16 @@ final class AppState: ObservableObject {
     }
     
     func deleteImage(fileName: String) {
-        // Find the index of the image being deleted before deletion
-        let allImages = getAllImages()
-        guard let deletedIndex = allImages.firstIndex(where: { $0.fileName == fileName }) else {
-            return
-        }
-        
-        // Check if we're deleting the currently selected image
-        let wasCurrent = (deletedIndex == currentImageIndex)
-        
-        // Delete the image
-        persistenceManager.deleteImage(fileName: fileName)
-        
-        // Update index and select replacement if needed
-        let remainingImages = getAllImages()
-        if !remainingImages.isEmpty {
-            if wasCurrent {
-                // We deleted the current image, select a replacement
-                if currentImageIndex >= remainingImages.count {
-                    // Index is now out of bounds, select the last image
-                    currentImageIndex = remainingImages.count - 1
-                }
-                // Keep currentImageIndex the same (which now points to the next image)
-                let newFileName = remainingImages[currentImageIndex].fileName
-                setActiveImage(fileName: newFileName)
-            } else if deletedIndex < currentImageIndex {
-                // We deleted an image before the current one, adjust index
-                currentImageIndex -= 1
-            }
-            // If we deleted after current, index stays the same
+        // Let PersistenceManager handle the deletion and return the new active image
+        if let newActiveImage = persistenceManager.deleteImageAndGetReplacement(fileName: fileName) {
+            // Update the current image
+            droppedImage = newActiveImage
+            // Update the index to match the new active image
+            updateCurrentImageIndex()
         } else {
-            // No images left, clear everything
-            currentImageIndex = 0
+            // No images left
             droppedImage = nil
+            currentImageIndex = 0
         }
     }
     
