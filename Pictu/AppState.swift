@@ -8,6 +8,7 @@ final class AppState: ObservableObject {
     @Published var popoverSize: CGSize = CGSize(width: 260, height: 200)
     @Published var errorMessage: String?
     @Published var showError: Bool = false
+    @Published var currentImageIndex: Int = 0  // Single source of truth for current image
     
     private let persistenceManager = PersistenceManager.shared
     
@@ -126,38 +127,36 @@ final class AppState: ObservableObject {
         let allImages = getAllImages()
         guard !allImages.isEmpty else { return }
         
-        // Find current active image index
-        guard let currentIndex = allImages.firstIndex(where: { $0.isActive }) else {
-            // If no active image, select the last one
-            if let lastImage = allImages.last {
-                setActiveImageWithPopoverHandling(fileName: lastImage.fileName)
-            }
-            return
-        }
+        // Decrement index with wrapping
+        currentImageIndex = currentImageIndex > 0 ? currentImageIndex - 1 : allImages.count - 1
         
-        // Navigate to previous image with wrapping
-        let newIndex = currentIndex > 0 ? currentIndex - 1 : allImages.count - 1
-        let newImage = allImages[newIndex]
-        setActiveImageWithPopoverHandling(fileName: newImage.fileName)
+        // Load the image at the new index
+        let fileName = allImages[currentImageIndex].fileName
+        setActiveImageWithPopoverHandling(fileName: fileName)
     }
     
     func navigateToNextImage() {
         let allImages = getAllImages()
         guard !allImages.isEmpty else { return }
         
-        // Find current active image index
-        guard let currentIndex = allImages.firstIndex(where: { $0.isActive }) else {
-            // If no active image, select the first one
-            if let firstImage = allImages.first {
-                setActiveImageWithPopoverHandling(fileName: firstImage.fileName)
-            }
-            return
-        }
+        // Increment index with wrapping
+        currentImageIndex = currentImageIndex < allImages.count - 1 ? currentImageIndex + 1 : 0
         
-        // Navigate to next image with wrapping
-        let newIndex = currentIndex < allImages.count - 1 ? currentIndex + 1 : 0
-        let newImage = allImages[newIndex]
-        setActiveImageWithPopoverHandling(fileName: newImage.fileName)
+        // Load the image at the new index
+        let fileName = allImages[currentImageIndex].fileName
+        setActiveImageWithPopoverHandling(fileName: fileName)
+    }
+    
+    func navigateLeft() {
+        print("🔍 [AppState] navigateLeft() called, current index: \(currentImageIndex)")
+        navigateToPreviousImage()
+        print("🔍 [AppState] navigateLeft() completed, new index: \(currentImageIndex)")
+    }
+    
+    func navigateRight() {
+        print("🔍 [AppState] navigateRight() called, current index: \(currentImageIndex)")
+        navigateToNextImage()
+        print("🔍 [AppState] navigateRight() completed, new index: \(currentImageIndex)")
     }
     
     private func setActiveImageWithPopoverHandling(fileName: String) {

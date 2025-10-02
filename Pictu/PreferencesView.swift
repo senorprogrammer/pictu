@@ -170,8 +170,6 @@ struct ThumbnailStrip: View {
     private func initializeThumbnailManager() {
         // Update the existing manager's appState reference
         thumbnailManager.updateAppState(appState)
-        // Reload images with the correct appState
-        thumbnailManager.loadImages()
     }
     
     var body: some View {
@@ -214,11 +212,15 @@ struct ThumbnailStrip: View {
             initializeThumbnailManager()
             // Auto-focus when the view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.focusDelay) {
+                print("🔍 [Focus] Setting isFocused to true")
                 isFocused = true
             }
         }
+        .onChange(of: isFocused) { newValue in
+            print("🔍 [Focus] isFocused changed to: \(newValue)")
+        }
         .onChange(of: appState.droppedImage) {
-            thumbnailManager.loadImages()
+            // Images are now automatically updated through reactive updates
         }
         .background(
             KeyEventHandlingView { keyCode in
@@ -228,9 +230,9 @@ struct ThumbnailStrip: View {
                         thumbnailManager.deleteImage(fileName)
                     }
                 } else if keyCode == AppDelegate.AppConstants.KeyCodes.leftArrow {
-                    thumbnailManager.navigateLeft()
+                    appState.navigateLeft()
                 } else if keyCode == AppDelegate.AppConstants.KeyCodes.rightArrow {
-                    thumbnailManager.navigateRight()
+                    appState.navigateRight()
                 }
             }
         )
