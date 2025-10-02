@@ -11,7 +11,7 @@ class PersistenceManager: ObservableObject {
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {
                 // Silently ignore and continue as requested
-                print("Core Data error: \(error), \(error.userInfo)")
+                ErrorManager.shared.logError(error, context: "Core Data initialization")
             }
         }
         // Resolve merge conflicts in favor of in-memory (object) values for this context
@@ -43,7 +43,7 @@ class PersistenceManager: ObservableObject {
         do {
             return try context.fetch(request).first ?? AppSettings(context: context)
         } catch {
-            print("Error fetching app settings: \(error)")
+            ErrorManager.shared.logError(error, context: "fetching app settings")
             return AppSettings(context: context)
         }
     }
@@ -53,7 +53,7 @@ class PersistenceManager: ObservableObject {
         do {
             return try context.fetch(request).first
         } catch {
-            print("Error loading app settings: \(error)")
+            ErrorManager.shared.logError(error, context: "loading app settings")
             return nil
         }
     }
@@ -124,11 +124,11 @@ class PersistenceManager: ObservableObject {
             if !activeImages.isEmpty {
                 activeImages.forEach { $0.isActive = false }
                 if ctx.hasChanges {
-                    do { try ctx.save() } catch { print("Error saving after deactivation: \(error)") }
+                    do { try ctx.save() } catch { ErrorManager.shared.logError(error, context: "saving after deactivation") }
                 }
             }
         } catch {
-            print("Error deactivating all images: \(error)")
+            ErrorManager.shared.logError(error, context: "deactivating all images")
         }
     }
     
@@ -165,7 +165,7 @@ class PersistenceManager: ObservableObject {
         do {
             try pngData.write(to: fileURL)
         } catch {
-            print("Error saving image data to disk: \(error)")
+            ErrorManager.shared.logError(error, context: "saving image data to disk")
             return nil
         }
         
@@ -187,7 +187,7 @@ class PersistenceManager: ObservableObject {
                 }
                 resultFileName = fileName
             } catch {
-                print("Error saving context (saveImage): \(error)")
+                ErrorManager.shared.logError(error, context: "saving context (saveImage)")
                 resultFileName = nil
             }
         }
@@ -207,7 +207,7 @@ class PersistenceManager: ObservableObject {
                 return NSImage(contentsOf: fileURL)
             }
         } catch {
-            print("Error loading active image: \(error)")
+            ErrorManager.shared.logError(error, context: "loading active image")
         }
         
         return nil
@@ -234,7 +234,7 @@ class PersistenceManager: ObservableObject {
                 return (fileName: fileName, isActive: image.isActive, createdAt: createdAt)
             }
         } catch {
-            print("Error loading all images: \(error)")
+            ErrorManager.shared.logError(error, context: "loading all images")
             return []
         }
     }
@@ -257,12 +257,12 @@ class PersistenceManager: ObservableObject {
                         do {
                             try self.backgroundContext.save()
                         } catch {
-                            print("Error saving context after setActiveImage: \(error)")
+                            ErrorManager.shared.logError(error, context: "saving context after setActiveImage")
                         }
                     }
                 }
             } catch {
-                print("Error setting active image: \(error)")
+                ErrorManager.shared.logError(error, context: "setting active image")
             }
         }
     }
@@ -283,14 +283,14 @@ class PersistenceManager: ObservableObject {
                     }
                 }
             } catch {
-                print("Error deleting image entity: \(error)")
+                ErrorManager.shared.logError(error, context: "deleting image entity")
             }
         }
         
         // Delete from file system
         if let fileURL = FileManager.pictuImageURL(for: fileName) {
             if FileManager.default.fileExists(atPath: fileURL.path) {
-                do { try FileManager.default.removeItem(at: fileURL) } catch { print("Error deleting file: \(error)") }
+                do { try FileManager.default.removeItem(at: fileURL) } catch { ErrorManager.shared.logError(error, context: "deleting file") }
             }
         }
     }
@@ -304,7 +304,7 @@ class PersistenceManager: ObservableObject {
             do {
                 try context.save()
             } catch {
-                print("Error saving context: \(error)")
+                ErrorManager.shared.logError(error, context: "saving context")
             }
         }
     }

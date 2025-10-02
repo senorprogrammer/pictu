@@ -6,8 +6,6 @@ final class AppState: ObservableObject {
     @Published var isPinned: Bool = false
     @Published var droppedImage: NSImage?
     @Published var popoverSize: CGSize = CGSize(width: 260, height: 200)
-    @Published var errorMessage: String?
-    @Published var showError: Bool = false
     @Published var currentImageIndex: Int = 0  // Single source of truth for current image
     
     private let persistenceManager = PersistenceManager.shared
@@ -64,8 +62,7 @@ final class AppState: ObservableObject {
 
     // MARK: - Error Handling
     func presentError(_ message: String) {
-        errorMessage = message
-        showError = true
+        ErrorManager.shared.presentError(message: message)
     }
     
     func getAllImages() -> [(fileName: String, isActive: Bool, createdAt: Date)] {

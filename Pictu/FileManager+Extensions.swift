@@ -37,7 +37,7 @@ extension FileManager {
             try FileManager.default.createDirectory(at: pictuURL, withIntermediateDirectories: true, attributes: nil)
             return pictuURL
         } catch {
-            print("❌ Failed to create Pictu directory: \(error)")
+            ErrorManager.shared.logError(error, context: "creating Pictu directory")
             return nil
         }
     }
@@ -60,7 +60,7 @@ extension FileManager {
             try FileManager.default.removeItem(at: imageURL)
             return true
         } catch {
-            print("❌ Failed to delete image \(fileName): \(error)")
+            ErrorManager.shared.logError(error, context: "deleting image \(fileName)")
             return false
         }
     }
@@ -80,7 +80,7 @@ extension FileManager {
                 try pngData.write(to: imageURL)
                 return true
             } catch {
-                print("❌ Failed to save image \(fileName): \(error)")
+                ErrorManager.shared.logError(error, context: "saving image \(fileName)")
                 return false
             }
         }
@@ -97,7 +97,7 @@ extension FileManager {
             try pngData.write(to: imageURL)
             return true
         } catch {
-            print("❌ Failed to save image \(fileName): \(error)")
+            ErrorManager.shared.logError(error, context: "saving image \(fileName)")
             return false
         }
     }

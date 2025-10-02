@@ -32,23 +32,14 @@ struct ContentView: View {
                     .padding(16)
             } else {
                 // Show the same drop target as the settings Images pane
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isDragOver ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                    .overlay(
-                        VStack(spacing: 8) {
-                            SwiftUI.Image(systemName: "photo.badge.plus")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
-                            Text("Drop an image here")
-                                .foregroundColor(.secondary)
-                        }
-                    )
-                    .padding(8)
+                DropTargetView(
+                    isDragOver: $isDragOver,
+                    onDrop: { providers in
+                        ImageDropHandler.handleDrop(providers: providers, appState: appState)
+                    }
+                )
             }
             
-        }
-        .onDrop(of: [.image], isTargeted: $isDragOver) { providers in
-            ImageDropHandler.handleDrop(providers: providers, appState: appState)
         }
         .background(
             KeyEventHandlingView { keyCode in
@@ -63,27 +54,8 @@ struct ContentView: View {
             }
         )
         .overlay(
-            // Drag overlay when dragging over
-            isDragOver ? 
-            RoundedRectangle(cornerRadius: AppConstants.Layout.cornerRadius)
-                .fill(Color.blue.opacity(AppConstants.Layout.dragOverlayOpacity))
-                .overlay(
-                    VStack(spacing: 8) {
-                        SwiftUI.Image(systemName: "photo.badge.plus")
-                            .font(.system(size: AppConstants.DropTarget.iconSize))
-                            .foregroundColor(.blue)
-                        Text("Drop image here")
-                            .foregroundColor(.blue)
-                            .font(.headline)
-                    }
-                )
-            : nil
+            ErrorAlertView(errorManager: ErrorManager.shared)
         )
-        .alert("Error", isPresented: $appState.showError) {
-            Button("OK") { appState.showError = false }
-        } message: {
-            Text(appState.errorMessage ?? "Unknown error")
-        }
     }
     
     
