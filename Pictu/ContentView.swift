@@ -1,14 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// MARK: - Constants
-private enum Constants {
-    static let cornerRadius: CGFloat = 8
-    static let padding: CGFloat = 4
-    static let spacerHeight: CGFloat = 10
-    static let dragOverlayOpacity: Double = 0.2
-    static let iconSize: CGFloat = ImageDropConstants.dropTargetIconSize
-}
 
 struct FixedImageView: NSViewRepresentable {
     let image: NSImage
@@ -29,7 +21,6 @@ struct FixedImageView: NSViewRepresentable {
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
-    @State private var isResizing = false
     @State private var isDragOver = false
 
     var body: some View {
@@ -37,7 +28,7 @@ struct ContentView: View {
             // Image or default content - anchored to top
             if let image = appState.droppedImage {
                 FixedImageView(image: image)
-                    .cornerRadius(Constants.cornerRadius)
+                    .cornerRadius(AppConstants.Layout.cornerRadius)
                     .padding(16)
             } else {
                 // Show the same drop target as the settings Images pane
@@ -61,12 +52,12 @@ struct ContentView: View {
         }
         .background(
             KeyEventHandlingView { keyCode in
-                if keyCode == AppDelegate.AppConstants.KeyCodes.escape {
+                if keyCode == AppConstants.KeyCodes.escape {
                     // Close the popover
                     NSApp.sendAction(#selector(AppDelegate.closePopover), to: nil, from: nil)
-                } else if keyCode == AppDelegate.AppConstants.KeyCodes.leftArrow {
+                } else if keyCode == AppConstants.KeyCodes.leftArrow {
                     appState.navigateToPreviousImage()
-                } else if keyCode == AppDelegate.AppConstants.KeyCodes.rightArrow {
+                } else if keyCode == AppConstants.KeyCodes.rightArrow {
                     appState.navigateToNextImage()
                 }
             }
@@ -74,12 +65,12 @@ struct ContentView: View {
         .overlay(
             // Drag overlay when dragging over
             isDragOver ? 
-            RoundedRectangle(cornerRadius: Constants.cornerRadius)
-                .fill(Color.blue.opacity(Constants.dragOverlayOpacity))
+            RoundedRectangle(cornerRadius: AppConstants.Layout.cornerRadius)
+                .fill(Color.blue.opacity(AppConstants.Layout.dragOverlayOpacity))
                 .overlay(
                     VStack(spacing: 8) {
                         SwiftUI.Image(systemName: "photo.badge.plus")
-                            .font(.system(size: ImageDropConstants.dropTargetIconSize))
+                            .font(.system(size: AppConstants.DropTarget.iconSize))
                             .foregroundColor(.blue)
                         Text("Drop image here")
                             .foregroundColor(.blue)

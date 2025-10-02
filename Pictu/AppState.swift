@@ -143,20 +143,13 @@ final class AppState: ObservableObject {
         setActiveImageWithPopoverHandling(fileName: fileName)
     }
     
-    func navigateLeft() {
-        navigateToPreviousImage()
-    }
-    
-    func navigateRight() {
-        navigateToNextImage()
-    }
     
     private func setActiveImageWithPopoverHandling(fileName: String) {
         // Close popover first if it's open
         NSApp.sendAction(#selector(AppDelegate.closePopover), to: nil, from: nil)
         
         // Small delay to ensure popover is closed before updating image
-        DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.popoverCloseDelay) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Animation.popoverCloseDelay) {
             self.setActiveImage(fileName: fileName)
         }
     }

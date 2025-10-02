@@ -1,29 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// MARK: - Constants
-enum ImageDropConstants {
-    // Thumbnail sizing
-    static let thumbnailSize: CGFloat = 60
-    static let thumbnailCornerRadius: CGFloat = 8
-    static let selectionBorderWidth: CGFloat = 3
-    
-    // Drop target styling
-    static let dropTargetIconSize: CGFloat = 40
-    static let dropTargetCornerRadius: CGFloat = 12
-    static let dropTargetPadding: CGFloat = 8
-    
-    // Animation timing
-    static let focusDelay: TimeInterval = 0.1
-    static let deletionDelay: TimeInterval = 0.1
-    static let popoverCloseDelay: TimeInterval = 0.2
-    static let popoverReopenDelay: TimeInterval = 0.1
-    
-    // Layout spacing
-    static let thumbnailStripHeight: CGFloat = 72
-    static let thumbnailSpacing: CGFloat = 8
-    static let thumbnailPadding: CGFloat = 6
-}
 
 // MARK: - Image Drop Handler
 struct ImageDropHandler {

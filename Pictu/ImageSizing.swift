@@ -2,14 +2,13 @@ import AppKit
 
 // MARK: - Image Sizing Utility
 struct ImageSizing {
-    static let maxImageDimension: CGFloat = 640
     
     /// Calculates the display size for an image, scaling down if longest side exceeds 320px
     /// - Parameter image: The image to calculate size for
     /// - Returns: The calculated display size
     static func displaySize(for image: NSImage) -> NSSize {
         let imageSize = image.size
-        let maxDimension = maxImageDimension
+        let maxDimension = AppConstants.Image.maxDimension
         
         // If image is smaller than max dimension, use original size
         if imageSize.width <= maxDimension && imageSize.height <= maxDimension {

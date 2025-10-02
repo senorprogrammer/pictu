@@ -52,10 +52,10 @@ class KeyboardShortcutManager {
             }
             
             // For popover, don't intercept navigation keys
-            if event.keyCode == AppDelegate.AppConstants.KeyCodes.delete ||
-               event.keyCode == AppDelegate.AppConstants.KeyCodes.leftArrow ||
-               event.keyCode == AppDelegate.AppConstants.KeyCodes.rightArrow ||
-               event.keyCode == AppDelegate.AppConstants.KeyCodes.escape {
+            if event.keyCode == AppConstants.KeyCodes.delete ||
+               event.keyCode == AppConstants.KeyCodes.leftArrow ||
+               event.keyCode == AppConstants.KeyCodes.rightArrow ||
+               event.keyCode == AppConstants.KeyCodes.escape {
                 return event
             }
             

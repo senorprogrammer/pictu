@@ -72,9 +72,9 @@ class KeyEventNSView: NSView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         // Ensure navigation keys are handled here to prevent system key equivalents
         let navigationKeys: Set<UInt16> = [
-            UInt16(AppDelegate.AppConstants.KeyCodes.delete),
-            UInt16(AppDelegate.AppConstants.KeyCodes.leftArrow),
-            UInt16(AppDelegate.AppConstants.KeyCodes.rightArrow)
+            UInt16(AppConstants.KeyCodes.delete),
+            UInt16(AppConstants.KeyCodes.leftArrow),
+            UInt16(AppConstants.KeyCodes.rightArrow)
         ]
         
         if navigationKeys.contains(event.keyCode) {

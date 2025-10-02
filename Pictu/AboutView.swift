@@ -3,24 +3,15 @@ import SwiftUI
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     
-    private enum Layout {
-        static let iconSize: CGFloat = 64
-        static let windowWidth: CGFloat = 300
-        static let windowHeight: CGFloat = 400
-        static let spacing: CGFloat = 20
-        static let innerSpacing: CGFloat = 12
-        static let padding: CGFloat = 30
-        static let horizontalPadding: CGFloat = 20
-    }
     
     private let authorName = "Chris Cummer"
     
     var body: some View {
-        VStack(spacing: Layout.spacing) {
+        VStack(spacing: AppConstants.About.spacing) {
             // App icon and name
-            VStack(spacing: Layout.innerSpacing) {
+            VStack(spacing: AppConstants.About.innerSpacing) {
                 SwiftUI.Image(systemName: "photo.on.rectangle")
-                    .font(.system(size: Layout.iconSize))
+                    .font(.system(size: AppConstants.About.iconSize))
                     .foregroundColor(.accentColor)
                 
                 Text("Pictu")
@@ -37,7 +28,7 @@ struct AboutView: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
-                .padding(.horizontal, Layout.horizontalPadding)
+                .padding(.horizontal, AppConstants.About.horizontalPadding)
             
             // Copyright
             Text("© \(String(Calendar.current.component(.year, from: Date()))) \(authorName). All rights reserved.")
@@ -51,8 +42,8 @@ struct AboutView: View {
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
         }
-        .padding(Layout.padding)
-        .frame(width: Layout.windowWidth, height: Layout.windowHeight)
+        .padding(AppConstants.About.padding)
+        .frame(width: AppConstants.About.windowWidth, height: AppConstants.About.windowHeight)
     }
 }
 

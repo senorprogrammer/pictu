@@ -175,7 +175,7 @@ struct ThumbnailStrip: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: true) {
-                HStack(spacing: ImageDropConstants.thumbnailSpacing) {
+                HStack(spacing: AppConstants.Layout.thumbnailSpacing) {
                     ForEach(thumbnailManager.images.indices, id: \.self) { idx in
                         let imageInfo = thumbnailManager.images[idx]
                         let isSelected = (appState.currentImageIndex == idx)
@@ -195,8 +195,8 @@ struct ThumbnailStrip: View {
                         .id(imageInfo.fileName) // Use fileName as unique identifier
                     }
                 }
-                .padding(.horizontal, ImageDropConstants.thumbnailSpacing)
-                .padding(.vertical, ImageDropConstants.thumbnailPadding)
+                .padding(.horizontal, AppConstants.Layout.thumbnailSpacing)
+                .padding(.vertical, AppConstants.Layout.thumbnailPadding)
             }
             .onChange(of: appState.currentImageIndex) { newIndex in
                 if newIndex < thumbnailManager.images.count {
@@ -207,12 +207,12 @@ struct ThumbnailStrip: View {
                 }
             }
         }
-        .frame(height: ImageDropConstants.thumbnailStripHeight)
+        .frame(height: AppConstants.Layout.thumbnailStripHeight)
         .background(Color.gray.opacity(0.1))
         .onAppear {
             initializeThumbnailManager()
             // Auto-focus when the view appears
-            DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.focusDelay) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Animation.focusDelay) {
                 isFocused = true
             }
         }
@@ -221,16 +221,16 @@ struct ThumbnailStrip: View {
         }
         .background(
             KeyEventHandlingView { keyCode in
-                if keyCode == AppDelegate.AppConstants.KeyCodes.delete {
+                if keyCode == AppConstants.KeyCodes.delete {
                     let currentIndex = appState.currentImageIndex
                     if currentIndex < thumbnailManager.images.count {
                         let fileName = thumbnailManager.images[currentIndex].fileName
                         thumbnailManager.deleteImage(fileName)
                     }
-                } else if keyCode == AppDelegate.AppConstants.KeyCodes.leftArrow {
-                    appState.navigateLeft()
-                } else if keyCode == AppDelegate.AppConstants.KeyCodes.rightArrow {
-                    appState.navigateRight()
+                } else if keyCode == AppConstants.KeyCodes.leftArrow {
+                    appState.navigateToPreviousImage()
+                } else if keyCode == AppConstants.KeyCodes.rightArrow {
+                    appState.navigateToNextImage()
                 }
             }
         )
@@ -261,20 +261,20 @@ struct ThumbnailView: View {
                         SwiftUI.Image(nsImage: thumbnail)
                             .resizable()
                             .aspectRatio(1, contentMode: .fill)
-                            .frame(width: ImageDropConstants.thumbnailSize, height: ImageDropConstants.thumbnailSize)
-                            .clipShape(RoundedRectangle(cornerRadius: ImageDropConstants.thumbnailCornerRadius))
+                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
+                            .clipShape(RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius))
                     } else if isLoading {
-                        RoundedRectangle(cornerRadius: ImageDropConstants.thumbnailCornerRadius)
+                        RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
                             .fill(Color.gray.opacity(0.3))
-                            .frame(width: ImageDropConstants.thumbnailSize, height: ImageDropConstants.thumbnailSize)
+                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
                             .overlay(
                                 ProgressView()
                                     .scaleEffect(0.7)
                             )
                     } else {
-                        RoundedRectangle(cornerRadius: ImageDropConstants.thumbnailCornerRadius)
+                        RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
                             .fill(Color.gray.opacity(0.3))
-                            .frame(width: ImageDropConstants.thumbnailSize, height: ImageDropConstants.thumbnailSize)
+                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
                             .overlay(
                                 SwiftUI.Image(systemName: "photo")
                                     .foregroundColor(.secondary)
@@ -283,9 +283,9 @@ struct ThumbnailView: View {
                     
                     // Selection indicator
                     if isSelected {
-                        RoundedRectangle(cornerRadius: ImageDropConstants.thumbnailCornerRadius)
-                            .stroke(Color.accentColor, lineWidth: ImageDropConstants.selectionBorderWidth)
-                            .frame(width: ImageDropConstants.thumbnailSize, height: ImageDropConstants.thumbnailSize)
+                        RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
+                            .stroke(Color.accentColor, lineWidth: AppConstants.Image.selectionBorderWidth)
+                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
                     }
                 }
             }

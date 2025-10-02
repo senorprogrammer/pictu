@@ -4,29 +4,6 @@ import ApplicationServices
 import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    // MARK: - Constants
-    enum AppConstants {
-        enum Popover {
-            static let borderPadding: CGFloat = 32
-            static let settingsButtonHeight: CGFloat = 60
-            static let minimumWidth: CGFloat = 120
-            static let minimumHeight: CGFloat = 120
-            static let imagePadding: CGFloat = 16
-            static let defaultSize = NSSize(width: 320, height: 240)
-        }
-        
-        enum Window {
-            static let defaultWidth: CGFloat = 500
-            static let defaultHeight: CGFloat = 400
-        }
-        
-        enum KeyCodes {
-            static let delete = 51
-            static let leftArrow = 123
-            static let rightArrow = 124
-            static let escape = 53
-        }
-    }
     
     // MARK: - Properties
     var statusItem: NSStatusItem?
@@ -59,15 +36,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return menu
     }()
     
-    // Right-click menu (for future use)
-    private lazy var rightClickMenu: NSMenu = {
-        let menu = NSMenu()
-        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit", action: #selector(quitApp), keyEquivalent: "q")
-        menu.items.forEach { $0.target = self }
-        return menu
-    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 1) Menubar item
@@ -227,7 +195,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // If popover is closed, just update the size for when it's next opened
         if popover.isShown {
             popover.performClose(nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.popoverReopenDelay) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Animation.popoverReopenDelay) {
                 self.reopenPopover()
             }
         }
