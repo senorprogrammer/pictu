@@ -243,6 +243,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         
         // Small delay to ensure the popover is fully closed before reopening
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            // Force the popover to recalculate its position by clearing any cached positioning
+            // This prevents NSPopover from reusing the previous position when only height changes
+            self.popover.contentViewController?.view.window?.setFrameOrigin(NSPoint(x: 0, y: 0))
+            
             self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
             self.popover.contentViewController?.view.window?.makeKey()
         }
