@@ -74,8 +74,8 @@ struct PreferencesView: View {
         .onAppear {
             loadSelectedTab()
         }
-        .onChange(of: selectedTab) {
-            saveSelectedTab(selectedTab)
+        .onChange(of: selectedTab) { _, newValue in
+            saveSelectedTab(newValue)
         }
     }
     
@@ -218,7 +218,7 @@ struct ThumbnailStrip: View {
                 .padding(.horizontal, AppConstants.Layout.thumbnailSpacing)
                 .padding(.vertical, AppConstants.Layout.thumbnailPadding)
             }
-            .onChange(of: appState.currentImageIndex) { newIndex in
+            .onChange(of: appState.currentImageIndex) { _, newIndex in
                 if newIndex < thumbnailManager.images.count {
                     let fileName = thumbnailManager.images[newIndex].fileName
                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -236,7 +236,7 @@ struct ThumbnailStrip: View {
                 isFocused = true
             }
         }
-        .onChange(of: appState.droppedImage) {
+        .onChange(of: appState.droppedImage) { _, _ in
             // Images are now automatically updated through reactive updates
         }
         .background(
