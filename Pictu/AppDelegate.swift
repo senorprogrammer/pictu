@@ -243,12 +243,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         
         // Small delay to ensure the popover is fully closed before reopening
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-            // Force the popover to recalculate its position by clearing any cached positioning
+            // Force the popover to recalculate its position by temporarily changing the content size
             // This prevents NSPopover from reusing the previous position when only height changes
-            self.popover.contentViewController?.view.window?.setFrameOrigin(NSPoint(x: 0, y: 0))
+            let currentSize = self.popover.contentViewController?.preferredContentSize ?? NSSize(width: 320, height: 240)
+            self.popover.contentViewController?.preferredContentSize = NSSize(width: currentSize.width + 1, height: currentSize.height)
             
-            self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
-            self.popover.contentViewController?.view.window?.makeKey()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.001) {
+                // Restore the correct size
+                self.popover.contentViewController?.preferredContentSize = currentSize
+                
+                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+                self.popover.contentViewController?.view.window?.makeKey()
+            }
         }
     }
     
