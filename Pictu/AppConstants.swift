@@ -31,7 +31,6 @@ enum AppConstants {
     
     // MARK: - Image Constants
     enum Image {
-        static let maxDimension: CGFloat = 640
         static let thumbnailSize: CGFloat = 60
         static let thumbnailCornerRadius: CGFloat = 8
         static let selectionBorderWidth: CGFloat = 3

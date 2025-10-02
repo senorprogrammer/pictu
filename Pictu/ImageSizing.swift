@@ -3,12 +3,13 @@ import AppKit
 // MARK: - Image Sizing Utility
 struct ImageSizing {
     
-    /// Calculates the display size for an image, scaling down if longest side exceeds 320px
-    /// - Parameter image: The image to calculate size for
+    /// Calculates the display size for an image, scaling down if longest side exceeds maxDimension
+    /// - Parameters:
+    ///   - image: The image to calculate size for
+    ///   - maxDimension: The maximum dimension allowed (from preferences or default)
     /// - Returns: The calculated display size
-    static func displaySize(for image: NSImage) -> NSSize {
+    static func displaySize(for image: NSImage, maxDimension: CGFloat) -> NSSize {
         let imageSize = image.size
-        let maxDimension = AppConstants.Image.maxDimension
         
         // If image is smaller than max dimension, use original size
         if imageSize.width <= maxDimension && imageSize.height <= maxDimension {
@@ -26,11 +27,13 @@ struct ImageSizing {
         )
     }
     
-    /// Scales an image down if longest side exceeds 320px while maintaining aspect ratio
-    /// - Parameter image: The image to scale
+    /// Scales an image down if longest side exceeds maxDimension while maintaining aspect ratio
+    /// - Parameters:
+    ///   - image: The image to scale
+    ///   - maxDimension: The maximum dimension allowed (from preferences or default)
     /// - Returns: The scaled image, or original if no scaling needed
-    static func scaledImage(for image: NSImage) -> NSImage {
-        let targetSize = displaySize(for: image)
+    static func scaledImage(for image: NSImage, maxDimension: CGFloat) -> NSImage {
+        let targetSize = displaySize(for: image, maxDimension: maxDimension)
         let originalSize = image.size
         
         // If no resizing needed, return original

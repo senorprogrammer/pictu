@@ -79,7 +79,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }.store(in: &cancellables)
 
-        // 5) Keyboard shortcuts
+        // 5) React to maxWindowSize changes and recalculate popover size
+        appState.$maxWindowSize.sink { [weak self] _ in
+            guard let self = self else { return }
+            if let image = self.appState.droppedImage {
+                self.resizePopoverForImage(image)
+            }
+        }.store(in: &cancellables)
+
+        // 6) Keyboard shortcuts
         keyboardShortcutManager = KeyboardShortcutManager(appDelegate: self)
         keyboardShortcutManager.registerToggleShortcut()
     }
@@ -228,7 +236,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     private func resizePopoverForImage(_ image: NSImage) {
         // Calculate popover size: scaled image size + padding on all sides
-        let scaledImageSize = ImageSizing.displaySize(for: image)
+        let maxDimension = CGFloat(appState.maxWindowSize)
+        let scaledImageSize = ImageSizing.displaySize(for: image, maxDimension: maxDimension)
         let newWindowSize = NSSize(
             width: scaledImageSize.width + (AppConstants.Popover.imagePadding * 2),
             height: scaledImageSize.height + (AppConstants.Popover.imagePadding * 2)

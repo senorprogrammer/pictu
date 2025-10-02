@@ -4,17 +4,18 @@ import UniformTypeIdentifiers
 
 struct FixedImageView: NSViewRepresentable {
     let image: NSImage
+    let maxDimension: CGFloat
 
     func makeNSView(context: Context) -> NSImageView {
         let imageView = NSImageView()
         imageView.imageAlignment = .alignCenter
         imageView.imageScaling = .scaleNone
-        imageView.image = ImageSizing.scaledImage(for: image)
+        imageView.image = ImageSizing.scaledImage(for: image, maxDimension: maxDimension)
         return imageView
     }
 
     func updateNSView(_ imageView: NSImageView, context: Context) {
-        imageView.image = ImageSizing.scaledImage(for: image)
+        imageView.image = ImageSizing.scaledImage(for: image, maxDimension: maxDimension)
     }
     
 }
@@ -27,7 +28,7 @@ struct ContentView: View {
         VStack(spacing: 0) {
             // Image or default content - anchored to top
             if let image = appState.droppedImage {
-                FixedImageView(image: image)
+                FixedImageView(image: image, maxDimension: CGFloat(appState.maxWindowSize))
                     .cornerRadius(AppConstants.Layout.cornerRadius)
                     .padding(16)
             } else {

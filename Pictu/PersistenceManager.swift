@@ -123,11 +123,11 @@ class PersistenceManager: ObservableObject {
     }
     
     /// Loads the maximum window size from persistent storage
-    /// - Returns: The saved maximum window size, defaults to 1024 if not set
+    /// - Returns: The saved maximum window size, defaults to 320 if not set
     func loadMaxWindowSize() -> Int32 {
         guard let settings = loadAppSettings(),
               settings.maxWindowSize > 0 else {
-            return 1024 // Default fallback
+            return 320 // Default fallback
         }
         return settings.maxWindowSize
     }
@@ -157,7 +157,8 @@ class PersistenceManager: ObservableObject {
             return image // Return original if invalid size
         }
         
-        return ImageSizing.scaledImage(for: image)
+        let maxDimension = CGFloat(loadMaxWindowSize())
+        return ImageSizing.scaledImage(for: image, maxDimension: maxDimension)
     }
     
     /// Saves an image to persistent storage and makes it the active image
