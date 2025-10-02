@@ -235,7 +235,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     private func reopenPopover() {
         guard let button = statusItem?.button else { return }
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
         popover.contentViewController?.view.window?.makeKey()
     }
     
