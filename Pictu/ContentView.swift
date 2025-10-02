@@ -57,22 +57,6 @@ struct ContentView: View {
                     .padding(8)
             }
             
-            // Small spacer to reduce space between image and settings
-            Spacer()
-                .frame(maxHeight: Constants.spacerHeight)
-            
-            // Settings button at bottom
-            HStack {
-                Spacer()
-                Button {
-                    // Post a settings request; AppDelegate will open the window
-                    NSApp.sendAction(#selector(AppDelegate.openSettings), to: nil, from: nil)
-                } label: {
-                    SwiftUI.Image(systemName: "gearshape")
-                }
-                .buttonStyle(.borderless)
-                .help("Open Settings")
-            }
         }
         .padding(16)
         .onDrop(of: [.image], isTargeted: $isDragOver) { providers in
