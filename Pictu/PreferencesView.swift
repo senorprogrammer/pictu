@@ -291,7 +291,7 @@ struct ThumbnailView: View {
     
     private func loadThumbnail() {
         guard let fileURL = FileManager.pictuImageURL(for: fileName) else {
-            print("❌ Invalid file name: \(fileName)")
+            ErrorManager.shared.logError(NSError(domain: "ThumbnailView", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid file name: \(fileName)"]), context: "loading thumbnail")
             isFileMissing = true
             onFileNotFound()
             return

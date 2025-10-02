@@ -7,7 +7,7 @@ extension FileManager {
     /// Returns the Pictu application support directory URL
     static var pictuAppSupportURL: URL? {
         guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            print("❌ Failed to get application support directory")
+            ErrorManager.shared.logError(NSError(domain: "FileManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get application support directory"]), context: "getting application support directory")
             return nil
         }
         return appSupport.appendingPathComponent("Pictu")
@@ -18,7 +18,7 @@ extension FileManager {
     /// - Returns: The full URL to the image file, or nil if invalid
     static func pictuImageURL(for fileName: String) -> URL? {
         guard !fileName.isEmpty, !fileName.contains("..") else {
-            print("❌ Invalid file name: \(fileName)")
+            ErrorManager.shared.logError(NSError(domain: "FileManager", code: -2, userInfo: [NSLocalizedDescriptionKey: "Invalid file name: \(fileName)"]), context: "validating file name")
             return nil
         }
         guard let pictuURL = pictuAppSupportURL else { return nil }
@@ -29,7 +29,7 @@ extension FileManager {
     /// - Returns: The URL of the directory, or nil if creation failed
     static func ensurePictuDirectoryExists() -> URL? {
         guard let pictuURL = pictuAppSupportURL else {
-            print("❌ Failed to get Pictu directory URL")
+            ErrorManager.shared.logError(NSError(domain: "FileManager", code: -3, userInfo: [NSLocalizedDescriptionKey: "Failed to get Pictu directory URL"]), context: "getting Pictu directory URL")
             return nil
         }
         
@@ -89,7 +89,7 @@ extension FileManager {
         guard let imageData = image.tiffRepresentation,
               let bitmapRep = NSBitmapImageRep(data: imageData),
               let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
-            print("❌ Failed to convert image to PNG data")
+            ErrorManager.shared.logError(NSError(domain: "FileManager", code: -4, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to PNG data"]), context: "converting image to PNG data")
             return false
         }
         
