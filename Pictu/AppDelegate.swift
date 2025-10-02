@@ -11,6 +11,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             static let settingsButtonHeight: CGFloat = 60
             static let minimumWidth: CGFloat = 120
             static let minimumHeight: CGFloat = 120
+            static let imagePadding: CGFloat = 16
+            static let defaultSize = NSSize(width: 320, height: 240)
         }
         
         enum Window {
@@ -27,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     
     // MARK: - Properties
-    var statusItem: NSStatusItem!
+    var statusItem: NSStatusItem?
     let popover = NSPopover()
 
     // App state shared with SwiftUI views
@@ -70,7 +72,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 1) Menubar item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem.button {
+        if let button = statusItem?.button {
             button.image = NSImage(systemSymbolName: "photo.on.rectangle",
                                    accessibilityDescription: "Menu")
             button.image?.isTemplate = true
@@ -115,16 +117,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func statusItemClicked(_ sender: Any?) {
-        guard let event = NSApp.currentEvent, let button = statusItem.button else { return }
+        guard let event = NSApp.currentEvent, let button = statusItem?.button else { return }
         
         // Check for modifier keys (Control, Option, Command, Shift)
         let hasModifiers = event.modifierFlags.intersection([.control, .option, .command, .shift]) != []
         
         if event.type == .rightMouseUp || hasModifiers {
             // Right-click or any modifier key shows the About/Quit menu
-            statusItem.menu = statusMenu
+            statusItem?.menu = statusMenu
             button.performClick(nil)
-            statusItem.menu = nil
+            statusItem?.menu = nil
             return
         }
         
@@ -133,7 +135,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func togglePopover(_ sender: Any?) {
-        guard let button = statusItem.button else { return }
+        guard let button = statusItem?.button else { return }
         if popover.isShown {
             popover.performClose(sender)
         } else {
@@ -217,50 +219,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
 
-    private func resizePopoverForImage(_ image: NSImage) {
-        // Calculate popover size: scaled image size + 32px (16px padding on all sides)
-        let scaledImageSize = ImageSizing.displaySize(for: image)
-        let padding: CGFloat = 16
-        let newWindowSize = NSSize(
-            width: scaledImageSize.width + (padding * 2),
-            height: scaledImageSize.height + (padding * 2)
-        )
-        
+    private func resizePopover(to size: NSSize) {
         // Update the hosting controller's preferred size
-        popover.contentViewController?.preferredContentSize = newWindowSize
+        popover.contentViewController?.preferredContentSize = size
         
         // If popover is currently shown, close and reopen to apply new size
         // If popover is closed, just update the size for when it's next opened
         if popover.isShown {
             popover.performClose(nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.popoverReopenDelay) {
-                // Explicitly reopen the popover
-                guard let button = self.statusItem.button else { return }
-                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                self.popover.contentViewController?.view.window?.makeKey()
+                self.reopenPopover()
             }
         }
     }
     
+    private func reopenPopover() {
+        guard let button = statusItem?.button else { return }
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
+    }
+    
+    private func resizePopoverForImage(_ image: NSImage) {
+        // Calculate popover size: scaled image size + padding on all sides
+        let scaledImageSize = ImageSizing.displaySize(for: image)
+        let newWindowSize = NSSize(
+            width: scaledImageSize.width + (AppConstants.Popover.imagePadding * 2),
+            height: scaledImageSize.height + (AppConstants.Popover.imagePadding * 2)
+        )
+        
+        resizePopover(to: newWindowSize)
+    }
+    
     private func resizePopoverForNoImage() {
-        // Set popover to 320x240 when no image is loaded
-        let newSize = NSSize(width: 320, height: 240)
-        
-        // Update the hosting controller's preferred size
-        popover.contentViewController?.preferredContentSize = newSize
-        
-        // If popover is currently shown, close and reopen to apply new size
-        // If popover is closed, just update the size for when it's next opened
-        if popover.isShown {
-            popover.performClose(nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + ImageDropConstants.popoverReopenDelay) {
-                // Explicitly reopen the popover
-                guard let button = self.statusItem.button else { return }
-                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                self.popover.contentViewController?.view.window?.makeKey()
-            }
-        }
-        // If popover is closed, the size will be applied when it's next opened
+        resizePopover(to: AppConstants.Popover.defaultSize)
     }
 
     deinit {
