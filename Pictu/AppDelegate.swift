@@ -235,8 +235,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     private func reopenPopover() {
         guard let button = statusItem?.button else { return }
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
-        popover.contentViewController?.view.window?.makeKey()
+        
+        // Force a fresh positioning calculation by ensuring the popover is fully closed
+        if popover.isShown {
+            popover.performClose(nil)
+        }
+        
+        // Small delay to ensure the popover is fully closed before reopening
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
+            self.popover.contentViewController?.view.window?.makeKey()
+        }
     }
     
     private func resizePopoverForImage(_ image: NSImage) {
