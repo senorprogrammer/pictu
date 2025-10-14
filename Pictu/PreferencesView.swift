@@ -98,7 +98,7 @@ struct GeneralSettingsView: View {
     
     var body: some View {
         Form {
-            Section("Window") {
+            Section("Popover") {
                 Toggle("Keep popover pinned by default", isOn: Binding(
                     get: { appState.isPinned },
                     set: { appState.savePinnedState($0) }
@@ -112,10 +112,6 @@ struct GeneralSettingsView: View {
                         Text(String(size)).tag(size)
                     }
                 }
-            }
-
-            Section("Appearance") {
-                Label("Icon: photo.on.rectangle", systemImage: "photo.on.rectangle")
             }
         }
         .formStyle(.grouped)
