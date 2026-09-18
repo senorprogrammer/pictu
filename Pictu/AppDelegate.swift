@@ -204,22 +204,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
 
     private func resizePopover(to size: NSSize) {
-        popover.contentViewController?.preferredContentSize = size
-
         guard popover.isShown,
               let window = popover.contentViewController?.view.window else {
-            popover.contentSize = size
+            let fitted = sizeFittingVisibleScreen(size)
+            popover.contentViewController?.preferredContentSize = fitted
+            popover.contentSize = fitted
             return
         }
 
         let newFrame = anchoredPopoverFrame(for: window, contentSize: size)
+        let fittedSize = window.contentRect(forFrameRect: newFrame).size
+        popover.contentViewController?.preferredContentSize = fittedSize
+
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = AppConstants.Animation.popoverResizeDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             window.animator().setFrame(newFrame, display: true)
         }, completionHandler: { [weak self] in
             guard let self else { return }
-            let latestSize = self.popover.contentViewController?.preferredContentSize ?? size
+            let latestSize = self.popover.contentViewController?.preferredContentSize ?? fittedSize
             self.popover.contentSize = latestSize
         })
     }
@@ -239,15 +242,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             newContentRect.origin.x = buttonRect.midX - contentSize.width / 2
         }
 
+        var newFrame = window.frameRect(forContentRect: newContentRect)
         if let screen = window.screen ?? NSScreen.main {
-            let visible = screen.visibleFrame
-            newContentRect.origin.x = min(
-                max(newContentRect.origin.x, visible.minX),
-                visible.maxX - contentSize.width
-            )
+            newFrame = constrainFrame(newFrame, to: screen.visibleFrame)
+        }
+        return newFrame
+    }
+
+    /// Fits the popover inside the visible screen, keeping its top edge in place when possible.
+    private func constrainFrame(_ frame: NSRect, to visible: NSRect) -> NSRect {
+        var result = frame
+
+        result.size.width = min(result.width, visible.width)
+        result.origin.x = min(max(result.origin.x, visible.minX), visible.maxX - result.size.width)
+
+        let maxHeight = max(result.maxY - visible.minY, 0)
+        if result.height > maxHeight {
+            result.size.height = maxHeight
+            result.origin.y = visible.minY
+        } else {
+            result.origin.y = max(result.origin.y, visible.minY)
         }
 
-        return window.frameRect(forContentRect: newContentRect)
+        return result
+    }
+
+    private func sizeFittingVisibleScreen(_ size: NSSize) -> NSSize {
+        guard let visible = NSScreen.main?.visibleFrame else { return size }
+        return NSSize(
+            width: min(size.width, visible.width),
+            height: min(size.height, visible.height)
+        )
     }
     
     private func resizePopoverForImage(_ image: NSImage) {
