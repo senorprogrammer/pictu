@@ -95,18 +95,7 @@ final class AppState: ObservableObject {
         guard !allImages.isEmpty else { return }
         let current = allImages.firstIndex(where: { $0.fileName == activeFileName }) ?? 0
         let next = (current + offset + allImages.count) % allImages.count
-        setActiveImageWithPopoverHandling(fileName: allImages[next].fileName)
-    }
-    
-    
-    private func setActiveImageWithPopoverHandling(fileName: String) {
-        // Close popover first if it's open
-        NSApp.sendAction(#selector(AppDelegate.closePopover), to: nil, from: nil)
-        
-        // Small delay to ensure popover is closed before updating image
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Animation.popoverCloseDelay) {
-            self.setActiveImage(fileName: fileName)
-        }
+        setActiveImage(fileName: allImages[next].fileName)
     }
     
     private func loadPersistedData() {

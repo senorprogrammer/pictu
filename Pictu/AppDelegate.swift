@@ -2,6 +2,7 @@ import Cocoa
 import SwiftUI
 import ApplicationServices
 import Combine
+import QuartzCore
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
@@ -203,45 +204,75 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
 
     private func resizePopover(to size: NSSize) {
-        // Update the hosting controller's preferred size
-        popover.contentViewController?.preferredContentSize = size
-        
-        // If popover is currently shown, close and reopen to apply new size
-        // If popover is closed, just update the size for when it's next opened
-        if popover.isShown {
-            popover.performClose(nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.Animation.popoverReopenDelay) {
-                self.reopenPopover()
-            }
+        guard popover.isShown,
+              let window = popover.contentViewController?.view.window else {
+            let fitted = sizeFittingVisibleScreen(size)
+            popover.contentViewController?.preferredContentSize = fitted
+            popover.contentSize = fitted
+            return
         }
+
+        let newFrame = anchoredPopoverFrame(for: window, contentSize: size)
+        let fittedSize = window.contentRect(forFrameRect: newFrame).size
+        popover.contentViewController?.preferredContentSize = fittedSize
+
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = AppConstants.Animation.popoverResizeDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            window.animator().setFrame(newFrame, display: true)
+        }, completionHandler: { [weak self] in
+            guard let self else { return }
+            let latestSize = self.popover.contentViewController?.preferredContentSize ?? fittedSize
+            self.popover.contentSize = latestSize
+        })
     }
-    
-    private func reopenPopover() {
-        guard let button = statusItem?.button else { return }
-        
-        // Force a fresh positioning calculation by ensuring the popover is fully closed
-        if popover.isShown {
-            popover.performClose(nil)
+
+    /// Keeps the popover attached under the status item while width/height change.
+    private func anchoredPopoverFrame(for window: NSWindow, contentSize: NSSize) -> NSRect {
+        let oldContentRect = window.contentRect(forFrameRect: window.frame)
+        var newContentRect = NSRect(
+            x: oldContentRect.midX - contentSize.width / 2,
+            y: oldContentRect.maxY - contentSize.height,
+            width: contentSize.width,
+            height: contentSize.height
+        )
+
+        if let button = statusItem?.button, let buttonWindow = button.window {
+            let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+            newContentRect.origin.x = buttonRect.midX - contentSize.width / 2
         }
-        
-        // Small delay to ensure the popover is fully closed before reopening
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-            // Force the popover to recalculate its position by temporarily changing the content size
-            // This prevents NSPopover from reusing the previous position when only height changes
-            let currentSize = self.popover.contentViewController?.preferredContentSize ?? NSSize(width: 320, height: 240)
-            self.popover.contentViewController?.preferredContentSize = NSSize(width: currentSize.width + 1, height: currentSize.height)
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.001) {
-                // Restore the correct size
-                self.popover.contentViewController?.preferredContentSize = currentSize
-                
-                self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .maxY)
-                // Only make popover key if settings window is not open
-                if !self.isSettingsWindowOpen {
-                    self.popover.contentViewController?.view.window?.makeKey()
-                }
-            }
+
+        var newFrame = window.frameRect(forContentRect: newContentRect)
+        if let screen = window.screen ?? NSScreen.main {
+            newFrame = constrainFrame(newFrame, to: screen.visibleFrame)
         }
+        return newFrame
+    }
+
+    /// Fits the popover inside the visible screen, keeping its top edge in place when possible.
+    private func constrainFrame(_ frame: NSRect, to visible: NSRect) -> NSRect {
+        var result = frame
+
+        result.size.width = min(result.width, visible.width)
+        result.origin.x = min(max(result.origin.x, visible.minX), visible.maxX - result.size.width)
+
+        let maxHeight = max(result.maxY - visible.minY, 0)
+        if result.height > maxHeight {
+            result.size.height = maxHeight
+            result.origin.y = visible.minY
+        } else {
+            result.origin.y = max(result.origin.y, visible.minY)
+        }
+
+        return result
+    }
+
+    private func sizeFittingVisibleScreen(_ size: NSSize) -> NSSize {
+        guard let visible = NSScreen.main?.visibleFrame else { return size }
+        return NSSize(
+            width: min(size.width, visible.width),
+            height: min(size.height, visible.height)
+        )
     }
     
     private func resizePopoverForImage(_ image: NSImage) {
