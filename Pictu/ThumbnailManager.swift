@@ -31,10 +31,16 @@ class ThumbnailManager: ObservableObject {
     // MARK: - Private Methods
     
     private func setupReactiveUpdates() {
+        cancellables.removeAll()
         // Listen for changes to the dropped image (indicates active image changed)
         appState.$droppedImage
             .sink { [weak self] _ in
                 // Trigger UI update when active image changes
+                self?.refreshTrigger = UUID()
+            }
+            .store(in: &cancellables)
+        appState.$imagesRevision
+            .sink { [weak self] _ in
                 self?.refreshTrigger = UUID()
             }
             .store(in: &cancellables)

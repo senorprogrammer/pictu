@@ -216,6 +216,7 @@ class PersistenceManager: ObservableObject {
             imageEntity.id = UUID()
             imageEntity.fileName = fileName
             imageEntity.createdAt = Date()
+            imageEntity.sortOrder = self.leadingSortOrder(in: self.backgroundContext)
             imageEntity.isActive = true
             
             // Deactivate others in background context and save
@@ -268,11 +269,14 @@ class PersistenceManager: ObservableObject {
         }
     }
     
-    /// Retrieves all images from persistent storage
+    /// Retrieves all images, ordered by `sortOrder` ascending, then `createdAt` descending.
     /// - Returns: An array of tuples containing filename, active state, and creation date
     func getAllImages() -> [(fileName: String, isActive: Bool, createdAt: Date)] {
         let request: NSFetchRequest<Image> = Image.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "sortOrder", ascending: true),
+            NSSortDescriptor(key: "createdAt", ascending: false)
+        ]
         
         do {
             let images = try context.fetch(request)
@@ -390,10 +394,67 @@ class PersistenceManager: ObservableObject {
         }
     }
     
+    /// Places `moving` before or after `target` in `fileNames`.
+    /// - Returns: The reordered names, or nil when either name is missing or they are the same.
+    static func movedFileNames(
+        _ fileNames: [String],
+        moving source: String,
+        relativeTo target: String,
+        insertAfter: Bool
+    ) -> [String]? {
+        guard source != target,
+              fileNames.contains(source),
+              fileNames.contains(target) else { return nil }
+
+        var result = fileNames
+        result.removeAll { $0 == source }
+        guard let targetIndex = result.firstIndex(of: target) else { return nil }
+        let insertIndex = insertAfter ? targetIndex + 1 : targetIndex
+        result.insert(source, at: insertIndex)
+        return result
+    }
+
+    /// Persists display order. Index 0 is the leftmost thumbnail.
+    func reorderImages(orderedFileNames: [String]) {
+        context.performAndWait {
+            let request: NSFetchRequest<Image> = Image.fetchRequest()
+            do {
+                let images = try self.context.fetch(request)
+                var imagesByFileName: [String: Image] = [:]
+                for image in images {
+                    if let fileName = image.fileName {
+                        imagesByFileName[fileName] = image
+                    }
+                }
+                for (index, fileName) in orderedFileNames.enumerated() {
+                    imagesByFileName[fileName]?.sortOrder = Int32(index)
+                }
+                if self.context.hasChanges {
+                    try self.context.save()
+                }
+            } catch {
+                ErrorManager.shared.logError(error, context: "reordering images")
+            }
+        }
+    }
+
     // MARK: - Helper Methods
-    
-    
-    
+
+    /// Sort order for a newly added image so it appears at the start of the strip.
+    private func leadingSortOrder(in context: NSManagedObjectContext) -> Int32 {
+        let request: NSFetchRequest<Image> = Image.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true)]
+        request.fetchLimit = 1
+        do {
+            guard let minimum = try context.fetch(request).first else { return 0 }
+            if minimum.sortOrder == Int32.min { return Int32.min }
+            return minimum.sortOrder - 1
+        } catch {
+            ErrorManager.shared.logError(error, context: "fetching leading sort order")
+            return 0
+        }
+    }
+
     private func saveContext() {
         if context.hasChanges {
             do {

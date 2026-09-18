@@ -196,8 +196,7 @@ struct ThumbnailStrip: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: true) {
                 HStack(spacing: AppConstants.Layout.thumbnailSpacing) {
-                    ForEach(thumbnailManager.images.indices, id: \.self) { idx in
-                        let imageInfo = thumbnailManager.images[idx]
+                    ForEach(Array(thumbnailManager.images.enumerated()), id: \.element.fileName) { idx, imageInfo in
                         let isSelected = (appState.currentImageIndex == idx)
                         
                         ThumbnailView(
@@ -210,9 +209,16 @@ struct ThumbnailStrip: View {
                             },
                             onFileNotFound: {
                                 thumbnailManager.deleteImage(imageInfo.fileName)
+                            },
+                            onReorder: { sourceFileName, insertAfter in
+                                appState.reorderImage(
+                                    moving: sourceFileName,
+                                    relativeTo: imageInfo.fileName,
+                                    insertAfter: insertAfter
+                                )
                             }
                         )
-                        .id(imageInfo.fileName) // Use fileName as unique identifier
+                        .id(imageInfo.fileName)
                     }
                 }
                 .padding(.horizontal, AppConstants.Layout.thumbnailSpacing)
@@ -265,57 +271,74 @@ struct ThumbnailView: View {
     let isSelected: Bool
     let onTap: () -> Void
     let onFileNotFound: () -> Void
+    let onReorder: (_ sourceFileName: String, _ insertAfter: Bool) -> Void
     
     @State private var thumbnail: NSImage?
     @State private var isLoading = true
     @State private var isFileMissing = false
+    @State private var isDropTargeted = false
     
     var body: some View {
         // Don't render anything if file is missing
         if isFileMissing {
             EmptyView()
         } else {
-            Button(action: onTap) {
-                ZStack {
-                    if let thumbnail = thumbnail {
-                        SwiftUI.Image(nsImage: thumbnail)
-                            .resizable()
-                            .aspectRatio(1, contentMode: .fill)
-                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
-                            .clipShape(RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius))
-                    } else if isLoading {
-                        RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
-                            .overlay(
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            )
-                    } else {
-                        RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
-                            .overlay(
-                                SwiftUI.Image(systemName: "photo")
-                                    .foregroundColor(.secondary)
-                            )
-                    }
-                    
-                    // Selection indicator
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
-                            .stroke(Color.accentColor, lineWidth: AppConstants.Image.selectionBorderWidth)
-                            .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
-                    }
+            ZStack {
+                if let thumbnail = thumbnail {
+                    SwiftUI.Image(nsImage: thumbnail)
+                        .resizable()
+                        .aspectRatio(1, contentMode: .fill)
+                        .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
+                        .clipShape(RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius))
+                } else if isLoading {
+                    RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
+                        .overlay(
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        )
+                } else {
+                    RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
+                        .overlay(
+                            SwiftUI.Image(systemName: "photo")
+                                .foregroundColor(.secondary)
+                        )
+                }
+                
+                if isSelected || isDropTargeted {
+                    RoundedRectangle(cornerRadius: AppConstants.Image.thumbnailCornerRadius)
+                        .stroke(Color.accentColor, lineWidth: AppConstants.Image.selectionBorderWidth)
+                        .frame(width: AppConstants.Image.thumbnailSize, height: AppConstants.Image.thumbnailSize)
                 }
             }
-            .buttonStyle(.plain)
-            .contentShape(Rectangle()) // better hit-testing
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
+            .onDrag {
+                NSItemProvider(object: fileName as NSString)
+            }
+            .onDrop(of: [.utf8PlainText], isTargeted: $isDropTargeted) { providers, location in
+                handleReorderDrop(providers: providers, location: location)
+            }
             .help("Image: \(fileName)")
             .onAppear {
                 loadThumbnail()
             }
         }
+    }
+    
+    private func handleReorderDrop(providers: [NSItemProvider], location: CGPoint) -> Bool {
+        guard let provider = providers.first else { return false }
+        let insertAfter = location.x >= AppConstants.Image.thumbnailSize / 2
+        provider.loadObject(ofClass: NSString.self) { object, _ in
+            guard let sourceFileName = object as? String else { return }
+            DispatchQueue.main.async {
+                self.onReorder(sourceFileName, insertAfter)
+            }
+        }
+        return true
     }
     
     private func loadThumbnail() {

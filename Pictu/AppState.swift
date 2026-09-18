@@ -8,6 +8,8 @@ final class AppState: ObservableObject {
     @Published var popoverSize: CGSize = CGSize(width: 260, height: 200)
     @Published var currentImageIndex: Int = 0  // Single source of truth for current image
     @Published var maxWindowSize: Int32 = 1024
+    /// Bumps when image display order changes without changing the active image.
+    @Published private(set) var imagesRevision = UUID()
     
     private let persistenceManager = PersistenceManager.shared
     
@@ -89,6 +91,21 @@ final class AppState: ObservableObject {
         }
     }
     
+    /// Moves `sourceFileName` before or after `targetFileName` and keeps selection on the active image.
+    func reorderImage(moving sourceFileName: String, relativeTo targetFileName: String, insertAfter: Bool) {
+        let fileNames = getAllImages().map(\.fileName)
+        guard let ordered = PersistenceManager.movedFileNames(
+            fileNames,
+            moving: sourceFileName,
+            relativeTo: targetFileName,
+            insertAfter: insertAfter
+        ), ordered != fileNames else { return }
+
+        persistenceManager.reorderImages(orderedFileNames: ordered)
+        updateCurrentImageIndex()
+        imagesRevision = UUID()
+    }
+
     func deleteImage(fileName: String) {
         // Let PersistenceManager handle the deletion and return the new active image
         if let newActiveImage = persistenceManager.deleteImageAndGetReplacement(fileName: fileName) {
