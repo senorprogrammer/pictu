@@ -1,12 +1,6 @@
 import SwiftUI
 import AppKit
 
-// Protocol for key event coordinators
-protocol KeyEventCoordinator: AnyObject {
-    func handleKeyPress(_ keyCode: UInt16)
-}
-
-// Custom NSView to handle key events
 struct KeyEventHandlingView: NSViewRepresentable {
     let onKeyPress: (UInt16) -> Void
     
@@ -21,25 +15,20 @@ struct KeyEventHandlingView: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: KeyEventNSView, context: Context) {
-        // Update the coordinator's handler
         context.coordinator.onKeyPress = onKeyPress
     }
     
-    class Coordinator: KeyEventCoordinator {
+    class Coordinator {
         var onKeyPress: (UInt16) -> Void
         
         init(onKeyPress: @escaping (UInt16) -> Void) {
             self.onKeyPress = onKeyPress
         }
-        
-        func handleKeyPress(_ keyCode: UInt16) {
-            onKeyPress(keyCode)
-        }
     }
 }
 
 class KeyEventNSView: NSView {
-    var coordinator: KeyEventCoordinator?
+    var coordinator: KeyEventHandlingView.Coordinator?
     
     override var acceptsFirstResponder: Bool {
         return true
@@ -66,7 +55,7 @@ class KeyEventNSView: NSView {
     }
     
     override func keyDown(with event: NSEvent) {
-        coordinator?.handleKeyPress(event.keyCode)
+        coordinator?.onKeyPress(event.keyCode)
     }
     
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

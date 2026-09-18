@@ -69,14 +69,6 @@ class PersistenceManager: ObservableObject {
         saveContext()
     }
     
-    /// Saves the popover size to persistent storage
-    /// - Parameter size: The popover size to save
-    func savePopoverSize(_ size: CGSize) {
-        let settings = getOrCreateAppSettings()
-        settings.popoverSize = NSStringFromSize(NSSize(width: size.width, height: size.height))
-        saveContext()
-    }
-    
     /// Loads the app's pinned state and window frame from persistent storage
     /// - Returns: A tuple containing the pinned state and window frame (nil if not set)
     func loadAppSettings() -> (isPinned: Bool, windowFrame: NSRect?) {
@@ -86,18 +78,6 @@ class PersistenceManager: ObservableObject {
         
         let frame = settings.windowFrame != nil ? NSRectFromString(settings.windowFrame!) : nil
         return (settings.isPinned, frame)
-    }
-    
-    /// Loads the popover size from persistent storage
-    /// - Returns: The saved popover size, or nil if not set
-    func loadPopoverSize() -> CGSize? {
-        guard let settings = loadAppSettings(),
-              let sizeString = settings.popoverSize else {
-            return nil
-        }
-        
-        let size = NSSizeFromString(sizeString)
-        return CGSize(width: size.width, height: size.height)
     }
     
     /// Saves the selected preferences tab to persistent storage
@@ -150,36 +130,14 @@ class PersistenceManager: ObservableObject {
         }
     }
     
-    /// Scales an image down if it exceeds the maximum dimension while maintaining aspect ratio
-    /// Works with actual pixel dimensions to avoid DPI scaling issues
-    private func scaleImageIfNeeded(_ image: NSImage) -> NSImage {
-        // Guard against invalid image dimensions
-        guard image.size.width > 0 && image.size.height > 0 else {
-            return image // Return original if invalid size
-        }
-        
-        let maxDimension: CGFloat = 1024
-        
-        // Try to get bitmap representation for accurate pixel dimensions
-        if let bitmapRep = image.representations.compactMap({ $0 as? NSBitmapImageRep }).first {
-            let scaledBitmap = ImageSizing.scaledBitmapRep(bitmapRep, maxDimension: maxDimension)
-            let scaledImage = NSImage(size: scaledBitmap.size)
-            scaledImage.addRepresentation(scaledBitmap)
-            return scaledImage
-        }
-        
-        // Fallback to legacy method
-        return ImageSizing.scaledImage(for: image, maxDimension: maxDimension)
-    }
-    
     /// Saves an image to persistent storage with pixel-based resizing and JPEG conversion
-    /// - Parameters:
-    ///   - image: The image to save
-    ///   - originalFileURL: Optional original file URL for preserving metadata
+    /// - Parameter image: The image to save
     /// - Returns: The filename of the saved image, or nil if saving failed
-    func saveImageFromData(_ image: NSImage, originalFileURL: URL? = nil) -> String? {
-        // Scale the image if it exceeds the maximum dimension
-        let scaledImage = scaleImageIfNeeded(image)
+    func saveImageFromData(_ image: NSImage) -> String? {
+        let maxDimension = CGFloat(loadMaxWindowSize())
+        let scaledImage = image.size.width > 0 && image.size.height > 0
+            ? ImageSizing.scaledImage(for: image, maxDimension: maxDimension)
+            : image
         
         // Get bitmap representation for conversion
         guard let imageData = scaledImage.tiffRepresentation,
@@ -236,13 +194,6 @@ class PersistenceManager: ObservableObject {
         return resultFileName
     }
     
-    /// Legacy method for saving images (kept for compatibility)
-    /// - Parameter image: The image to save
-    /// - Returns: The filename of the saved image, or nil if saving failed
-    func saveImage(_ image: NSImage) -> String? {
-        return saveImageFromData(image)
-    }
-    
     /// Loads the currently active image from persistent storage
     /// - Returns: The active image, or nil if no active image exists
     func loadActiveImage() -> NSImage? {
@@ -271,7 +222,7 @@ class PersistenceManager: ObservableObject {
     
     /// Retrieves all images, ordered by `sortOrder` ascending, then `createdAt` descending.
     /// - Returns: An array of tuples containing filename, active state, and creation date
-    func getAllImages() -> [(fileName: String, isActive: Bool, createdAt: Date)] {
+    func getAllImages() -> [(fileName: String, isActive: Bool)] {
         let request: NSFetchRequest<Image> = Image.fetchRequest()
         request.sortDescriptors = [
             NSSortDescriptor(key: "sortOrder", ascending: true),
@@ -281,9 +232,8 @@ class PersistenceManager: ObservableObject {
         do {
             let images = try context.fetch(request)
             return images.compactMap { image in
-                guard let fileName = image.fileName,
-                      let createdAt = image.createdAt else { return nil }
-                return (fileName: fileName, isActive: image.isActive, createdAt: createdAt)
+                guard let fileName = image.fileName else { return nil }
+                return (fileName: fileName, isActive: image.isActive)
             }
         } catch {
             ErrorManager.shared.logError(error, context: "loading all images")
@@ -347,51 +297,35 @@ class PersistenceManager: ObservableObject {
         }
     }
     
-    /// Deletes an image and returns a replacement image to display
+    /// Deletes an image and returns the image that should be shown next.
     /// - Parameter fileName: The filename of the image to delete
-    /// - Returns: The new active image to display, or nil if no images remain
-    func deleteImageAndGetReplacement(fileName: String) -> NSImage? {
-        // Get all images before deletion
+    /// - Returns: The replacement image and its filename, or nil if none remain
+    func deleteImageAndGetReplacement(fileName: String) -> (image: NSImage, fileName: String)? {
         let allImages = getAllImages()
         guard let deletedIndex = allImages.firstIndex(where: { $0.fileName == fileName }) else {
             return nil
         }
         
-        // Check if we're deleting the currently active image
         let wasActive = allImages[deletedIndex].isActive
-        
-        // Delete the image
+        let previousActiveFileName = allImages.first(where: { $0.isActive })?.fileName
         deleteImage(fileName: fileName)
         
-        // Get remaining images after deletion
         let remainingImages = getAllImages()
+        guard !remainingImages.isEmpty else { return nil }
         
-        if remainingImages.isEmpty {
-            // No images left
+        let replacementFileName: String
+        if wasActive {
+            let replacementIndex = deletedIndex < remainingImages.count ? deletedIndex : remainingImages.count - 1
+            replacementFileName = remainingImages[replacementIndex].fileName
+            setActiveImage(fileName: replacementFileName)
+        } else if let previousActiveFileName {
+            replacementFileName = previousActiveFileName
+        } else {
             return nil
         }
         
-        if wasActive {
-            // We deleted the active image, need to select a replacement
-            let replacementIndex: Int
-            if deletedIndex < remainingImages.count {
-                // Use the same index (now points to the next image)
-                replacementIndex = deletedIndex
-            } else {
-                // Index is out of bounds, select the last image
-                replacementIndex = remainingImages.count - 1
-            }
-            
-            // Set the replacement as active
-            let replacementFileName = remainingImages[replacementIndex].fileName
-            setActiveImage(fileName: replacementFileName)
-            
-            // Return the new active image
-            return loadActiveImage()
-        } else {
-            // We deleted a non-active image, return the current active image
-            return loadActiveImage()
-        }
+        guard let image = loadActiveImage() else { return nil }
+        return (image, replacementFileName)
     }
     
     /// Places `moving` before or after `target` in `fileNames`.

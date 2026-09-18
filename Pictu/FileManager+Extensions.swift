@@ -1,5 +1,4 @@
 import Foundation
-import AppKit
 
 // MARK: - FileManager Extensions for Pictu
 extension FileManager {
@@ -48,69 +47,5 @@ extension FileManager {
     static func pictuImageExists(fileName: String) -> Bool {
         guard let imageURL = pictuImageURL(for: fileName) else { return false }
         return FileManager.default.fileExists(atPath: imageURL.path)
-    }
-    
-    /// Safely deletes an image file from the Pictu directory
-    /// - Parameter fileName: The name of the image file to delete
-    /// - Returns: True if deletion was successful, false otherwise
-    static func deletePictuImage(fileName: String) -> Bool {
-        guard let imageURL = pictuImageURL(for: fileName) else { return false }
-        
-        do {
-            try FileManager.default.removeItem(at: imageURL)
-            return true
-        } catch {
-            ErrorManager.shared.logError(error, context: "deleting image \(fileName)")
-            return false
-        }
-    }
-    
-    /// Safely saves an image to the Pictu directory
-    /// - Parameters:
-    ///   - image: The NSImage to save
-    ///   - fileName: The name for the saved file
-    /// - Returns: True if save was successful, false otherwise
-    static func savePictuImage(_ image: NSImage, fileName: String) -> Bool {
-        guard let imageURL = pictuImageURL(for: fileName) else { return false }
-        guard let _ = ensurePictuDirectoryExists() else { return false }
-        
-        // Try to get PNG representation directly if possible
-        if let pngData = image.pngData {
-            do {
-                try pngData.write(to: imageURL)
-                return true
-            } catch {
-                ErrorManager.shared.logError(error, context: "saving image \(fileName)")
-                return false
-            }
-        }
-        
-        // Fallback to TIFF conversion
-        guard let imageData = image.tiffRepresentation,
-              let bitmapRep = NSBitmapImageRep(data: imageData),
-              let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
-            ErrorManager.shared.logError(NSError(domain: "FileManager", code: -4, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to PNG data"]), context: "converting image to PNG data")
-            return false
-        }
-        
-        do {
-            try pngData.write(to: imageURL)
-            return true
-        } catch {
-            ErrorManager.shared.logError(error, context: "saving image \(fileName)")
-            return false
-        }
-    }
-}
-
-// MARK: - NSImage Extensions
-extension NSImage {
-    /// Returns PNG data representation of the image
-    var pngData: Data? {
-        guard let imageData = self.tiffRepresentation,
-              let bitmapRep = NSBitmapImageRep(data: imageData) else {
-            return nil
-        }
-        return bitmapRep.representation(using: .png, properties: [:])
     }
 }

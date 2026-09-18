@@ -6,10 +6,7 @@ struct PictuApp: App {
 
     var body: some Scene {
         Settings {
-            PreferencesView()
-                .environmentObject(appDelegate.appState)
-                .frame(width: 360, height: 220)
-                .padding()
+            EmptyView()
         }
         .commands {
             CommandGroup(replacing: .appSettings) {
