@@ -42,8 +42,7 @@ enum AppConstants {
     // MARK: - Animation Timing
     enum Animation {
         static let focusDelay: TimeInterval = 0.1
-        static let popoverCloseDelay: TimeInterval = 0.2
-        static let popoverReopenDelay: TimeInterval = 0.1
+        static let popoverResizeDuration: TimeInterval = 0.2
     }
     
     // MARK: - Layout Constants
