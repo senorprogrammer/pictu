@@ -5,9 +5,11 @@ import AppKit
 final class AppState: ObservableObject {
     @Published var isPinned: Bool = false
     @Published var droppedImage: NSImage?
-    @Published var popoverSize: CGSize = CGSize(width: 260, height: 200)
-    @Published var currentImageIndex: Int = 0  // Single source of truth for current image
+    /// Filename of the image currently shown. Thumbnail selection is derived from this.
+    @Published private(set) var activeFileName: String?
     @Published var maxWindowSize: Int32 = 1024
+    /// Bumps when the image list changes without changing the active image.
+    @Published private(set) var imagesRevision = UUID()
     
     private let persistenceManager = PersistenceManager.shared
     
@@ -28,113 +30,72 @@ final class AppState: ObservableObject {
         persistenceManager.saveMaxWindowSize(maxSize)
     }
     
-    func savePopoverSize(_ size: CGSize) {
-        // Constrain size to screen bounds
-        let constrainedSize = constrainToScreen(size)
-        popoverSize = constrainedSize
-        persistenceManager.savePopoverSize(constrainedSize)
-    }
-    
-    private func constrainToScreen(_ size: CGSize) -> CGSize {
-        guard let screen = NSScreen.main else { return size }
-        let screenSize = screen.visibleFrame.size
-        
-        var constrainedWidth = size.width
-        var constrainedHeight = size.height
-        
-        // If width exceeds screen, reduce by screen width - 10
-        if size.width > screenSize.width {
-            constrainedWidth = screenSize.width - 10
-        }
-        
-        // If height exceeds screen, reduce by screen height - 10
-        if size.height > screenSize.height {
-            constrainedHeight = screenSize.height - 10
-        }
-        
-        return CGSize(width: constrainedWidth, height: constrainedHeight)
-    }
-    
-    func saveImage(_ image: NSImage) {
-        if persistenceManager.saveImage(image) != nil {
-            droppedImage = image
-        }
-    }
-    
-    func saveImageFromData(_ image: NSImage, originalFileURL: URL? = nil) {
-        if persistenceManager.saveImageFromData(image, originalFileURL: originalFileURL) != nil {
-            droppedImage = image
-        }
+    func saveImageFromData(_ image: NSImage) {
+        guard let fileName = persistenceManager.saveImageFromData(image) else { return }
+        activeFileName = fileName
+        droppedImage = image
+        imagesRevision = UUID()
     }
     
     func clearImage() {
         persistenceManager.clearActiveImage()
         droppedImage = nil
-    }
-
-    // MARK: - Error Handling
-    func presentError(_ message: String) {
-        ErrorManager.shared.presentError(message: message)
+        activeFileName = nil
     }
     
-    func getAllImages() -> [(fileName: String, isActive: Bool, createdAt: Date)] {
+    func getAllImages() -> [(fileName: String, isActive: Bool)] {
         return persistenceManager.getAllImages()
     }
     
     func setActiveImage(fileName: String) {
+        activeFileName = fileName
         persistenceManager.setActiveImage(fileName: fileName)
-        // Reload the active image
         if let image = persistenceManager.loadActiveImage() {
             droppedImage = image
         }
     }
     
-    func deleteImage(fileName: String) {
-        // Let PersistenceManager handle the deletion and return the new active image
-        if let newActiveImage = persistenceManager.deleteImageAndGetReplacement(fileName: fileName) {
-            // Update the current image
-            droppedImage = newActiveImage
-            // Update the index to match the new active image
-            updateCurrentImageIndex()
-        } else {
-            // No images left
-            droppedImage = nil
-            currentImageIndex = 0
-        }
+    /// Moves `sourceFileName` before or after `targetFileName` and keeps selection on the active image.
+    func reorderImage(moving sourceFileName: String, relativeTo targetFileName: String, insertAfter: Bool) {
+        let fileNames = getAllImages().map(\.fileName)
+        guard let ordered = PersistenceManager.movedFileNames(
+            fileNames,
+            moving: sourceFileName,
+            relativeTo: targetFileName,
+            insertAfter: insertAfter
+        ), ordered != fileNames else { return }
+
+        persistenceManager.reorderImages(orderedFileNames: ordered)
+        imagesRevision = UUID()
     }
-    
-    /// Updates the currentImageIndex to match the active image
-    private func updateCurrentImageIndex() {
-        let allImages = getAllImages()
-        if let activeIndex = allImages.firstIndex(where: { $0.isActive }) {
-            currentImageIndex = activeIndex
+
+    func deleteImage(fileName: String) {
+        if let replacement = persistenceManager.deleteImageAndGetReplacement(fileName: fileName) {
+            droppedImage = replacement.image
+            activeFileName = replacement.fileName
+        } else {
+            droppedImage = nil
+            activeFileName = nil
         }
+        imagesRevision = UUID()
     }
     
     // MARK: - Navigation Methods
     
     func navigateToPreviousImage() {
-        let allImages = getAllImages()
-        guard !allImages.isEmpty else { return }
-        
-        // Decrement index with wrapping
-        currentImageIndex = currentImageIndex > 0 ? currentImageIndex - 1 : allImages.count - 1
-        
-        // Load the image at the new index
-        let fileName = allImages[currentImageIndex].fileName
-        setActiveImageWithPopoverHandling(fileName: fileName)
+        navigate(offset: -1)
     }
     
     func navigateToNextImage() {
+        navigate(offset: 1)
+    }
+    
+    private func navigate(offset: Int) {
         let allImages = getAllImages()
         guard !allImages.isEmpty else { return }
-        
-        // Increment index with wrapping
-        currentImageIndex = currentImageIndex < allImages.count - 1 ? currentImageIndex + 1 : 0
-        
-        // Load the image at the new index
-        let fileName = allImages[currentImageIndex].fileName
-        setActiveImageWithPopoverHandling(fileName: fileName)
+        let current = allImages.firstIndex(where: { $0.fileName == activeFileName }) ?? 0
+        let next = (current + offset + allImages.count) % allImages.count
+        setActiveImageWithPopoverHandling(fileName: allImages[next].fileName)
     }
     
     
@@ -153,27 +114,14 @@ final class AppState: ObservableObject {
         let settings = persistenceManager.loadAppSettings()
         isPinned = settings.isPinned
         
-        // Load max window size
-        maxWindowSize = PersistenceManager.shared.loadMaxWindowSize()
+        maxWindowSize = persistenceManager.loadMaxWindowSize()
         
-        // Load popover size and constrain to screen
-        if let savedSize = persistenceManager.loadPopoverSize() {
-            popoverSize = constrainToScreen(savedSize)
-        }
-        
-        // Load active image and set the current index
         let allImages = getAllImages()
-        if let activeIndex = allImages.firstIndex(where: { $0.isActive }) {
-            currentImageIndex = activeIndex
-            if let image = persistenceManager.loadActiveImage() {
-                droppedImage = image
-            }
-        } else {
-            // Fallback: if no active image but images exist, select the most recent one
-            if let mostRecentImage = allImages.first {
-                currentImageIndex = 0
-                setActiveImage(fileName: mostRecentImage.fileName)
-            }
+        if let active = allImages.first(where: { $0.isActive }) {
+            activeFileName = active.fileName
+            droppedImage = persistenceManager.loadActiveImage()
+        } else if let mostRecentImage = allImages.first {
+            setActiveImage(fileName: mostRecentImage.fileName)
         }
     }
 }

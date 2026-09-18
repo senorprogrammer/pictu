@@ -11,32 +11,29 @@ struct ImageDropHandler {
             provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        appState.presentError("Failed to load image: \(error.localizedDescription)")
+                        ErrorManager.shared.presentError(message: "Failed to load image: \(error.localizedDescription)")
                         return
                     }
                     
-                    // Handle URL-based image files
                     if let url = item as? URL {
                         if let nsImage = NSImage(contentsOf: url) {
-                            appState.saveImageFromData(nsImage, originalFileURL: url)
+                            appState.saveImageFromData(nsImage)
                         } else {
-                            appState.presentError("Unsupported image file format.")
+                            ErrorManager.shared.presentError(message: "Unsupported image file format.")
                         }
                         return
                     }
                     
-                    // Handle data-based images (paste, drag from other apps)
                     if let data = item as? Data {
                         if let nsImage = NSImage(data: data) {
                             appState.saveImageFromData(nsImage)
                         } else {
-                            appState.presentError("Unsupported image data format.")
+                            ErrorManager.shared.presentError(message: "Unsupported image data format.")
                         }
                         return
                     }
                     
-                    // Fallback to NSImage object loading
-                    appState.presentError("Unsupported item. Please drop a valid image file.")
+                    ErrorManager.shared.presentError(message: "Unsupported item. Please drop a valid image file.")
                 }
             }
             return true
@@ -47,21 +44,21 @@ struct ImageDropHandler {
             provider.loadObject(ofClass: NSImage.self) { image, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        appState.presentError("Failed to load image: \(error.localizedDescription)")
+                        ErrorManager.shared.presentError(message: "Failed to load image: \(error.localizedDescription)")
                         return
                     }
                     
                     if let nsImage = image as? NSImage {
                         appState.saveImageFromData(nsImage)
                     } else {
-                        appState.presentError("Unsupported item. Please drop a valid image.")
+                        ErrorManager.shared.presentError(message: "Unsupported item. Please drop a valid image.")
                     }
                 }
             }
             return true
         }
         
-        appState.presentError("Unsupported item. Please drop an image file.")
+        ErrorManager.shared.presentError(message: "Unsupported item. Please drop an image file.")
         return false
     }
 }
